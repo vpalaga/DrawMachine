@@ -1,5 +1,7 @@
 from PIL import Image, ImageDraw, ImageFont
+
 from gen import FCODE
+
 
 def font(size):
     return ImageFont.truetype("arial.ttf", size)

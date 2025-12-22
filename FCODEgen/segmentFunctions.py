@@ -1,7 +1,7 @@
 import math
 
 class Instruction:
-    instructions_parameters_len = {
+    instructions_parameters_len = { # check if the parameters are correct
         "MOVE": 2,
         "PENUP": 0,
         "PENDOWN": 0,
@@ -11,9 +11,10 @@ class Instruction:
     def __init__(self, i_type:str, *args:int|float, acc=0.01):
         self.i_type = i_type.upper()  # instruction type
 
-        self.round_up_to = round(-math.log(acc, 10))
-        self.parameters = [round(p, ndigits=self.round_up_to) for p in args] # instructions parameters
+        self.round_up_to = round(-math.log(acc, 10)) # ndigits from decimals 0.001 -> 3
+        self.parameters = [float(round(p, ndigits=self.round_up_to)) for p in args] # instructions parameters turn into floats
 
+        # handle warnings and formating Errors
         if self.i_type not in Instruction.instructions_parameters_len.keys(): # check if the instruction is known
             raise Warning("instruction: " + self.i_type + " is unknown")
 

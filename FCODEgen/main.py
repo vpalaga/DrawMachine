@@ -1,7 +1,8 @@
-from segmentFunctions import Instruction
 from dxfReader import Reader
 from gen import FCODE
 from imageHandler import Visual
+from segmentFunctions import Instruction
+
 
 class FGenerator:
     def __init__(self,

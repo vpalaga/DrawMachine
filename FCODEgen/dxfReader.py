@@ -1,14 +1,13 @@
-from ezdxf.addons import text2path
+import math
 
+import ezdxf
+from ezdxf.addons import text2path
+from ezdxf.enums import TextEntityAlignment
 from ezdxf.lldxf.const import (
     MTEXT_TOP_LEFT, MTEXT_TOP_CENTER, MTEXT_TOP_RIGHT,
     MTEXT_MIDDLE_LEFT, MTEXT_MIDDLE_CENTER, MTEXT_MIDDLE_RIGHT,
     MTEXT_BOTTOM_LEFT, MTEXT_BOTTOM_CENTER, MTEXT_BOTTOM_RIGHT,
 )
-from ezdxf.enums import TextEntityAlignment
-import ezdxf
-
-import math
 
 
 def gen_circle(center:tuple[float, float], r:float, segments:int):
