@@ -228,6 +228,10 @@ class Reader:
 
         elif e_type == "TEXT":
             print("text: " + e.dxf.text)
+        elif e_type == "ARC":
+            segment = [(p.x, p.y) for p in e.flattening(self.acc)]
+        elif e_type == "LWPOLYLINE":
+            segment = [(p[0], p[1]) for p in e.get_points()]  # default format
 
         else:
             print("p" + e_type)

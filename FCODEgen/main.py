@@ -3,34 +3,46 @@ from dxfReader import Reader
 from gen import FCODE
 from imageHandler import Visual
 
-file = FCODE("A4", "file")
-reader = Reader("Drawing 1.dxf", acc=5)
+class FGenerator:
+    def __init__(self,
+                 path_to_dxf:str,
+                 acc=0.1,
+                 format="A4"):
 
-instructions = reader.read()
+        self.name = path_to_dxf.split("/")[-1].split(".")[0]
+        print("name: " + self.name)
 
-vis = Visual("A4")
+        self.acc = acc
 
-for segments in instructions:
-    x, y = segments[0][0], segments[0][1]
+        self.file = FCODE(size=format, name=self.name)
+        self.reader = Reader(name=path_to_dxf, acc=self.acc)
 
-    if not (x, y) == (vis.nozzle_x, vis.nozzle_y): # move to next segment with lifting the nozzle
-        vis.penup()
-        file.add_instruction(Instruction("PENUP"))
+        self.instructions = self.reader.read()
 
-        vis.move(x, y) # move to first segment pos
-        file.add_instruction(Instruction("MOVE", x, y))
+        self.vis = Visual("A4")
 
-        vis.pendown()
-        file.add_instruction(Instruction("PENDOWN"))
+    def gen_instructions(self):
+        for segments in self.instructions:
+            x, y = segments[0][0], segments[0][1]
 
-    else:
-        pass
+            if not (x, y) == (self.vis.nozzle_x, self.vis.nozzle_y): # move to next segment with lifting the nozzle
+                self.vis.penup()
+                self.file.add_instruction(Instruction("PENUP"))
 
-    for segment in segments[1:]:
-        file.add_instruction(Instruction("MOVE",  *segment))
-        vis.move(*segment)
+                self.vis.move(x, y) # move to first segment pos
+                self.file.add_instruction(Instruction("MOVE", x, y))
+
+                self.vis.pendown()
+                self.file.add_instruction(Instruction("PENDOWN"))
+
+            else:
+                pass
+
+            for segment in segments[1:]:
+                self.file.add_instruction(Instruction("MOVE",  *segment))
+                self.vis.move(*segment)
 
 
-
-vis.show()
-file.save()
+    def save(self):
+        self.vis.show()
+        self.file.save()
