@@ -150,9 +150,10 @@ def point(point, radius:float, line_len:float):
     return gen_circle((center[0], center[1]), radius, segments=segments)
 
 class Reader:
-    def __init__(self, name:str, acc=0.001):
+    def __init__(self, name:str, acc=0.001, text=True):
         self.name = name
-        self.acc = acc
+        self.acc = acc#
+        self.text = text
 
         try:
             self.doc = ezdxf.readfile(name)
@@ -204,7 +205,7 @@ class Reader:
             #self.vis.line((s_x, s_y), (e_x, e_y))
             segment = [(s_x, s_y), (e_x, e_y)]
 
-        elif e_type == "MTEXT":
+        elif e_type == "MTEXT" and self.text:
             segment = self.text_path(e)
 
         elif e_type == "DIMENSION":

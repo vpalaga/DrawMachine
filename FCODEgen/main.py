@@ -3,11 +3,12 @@ from gen import FCODE
 from imageHandler import Visual
 from segmentFunctions import Instruction
 
-
 class FGenerator:
     def __init__(self,
                  path_to_dxf:str,
                  acc=0.1,
+                 vis_scale=10.0,
+                 text=True,
                  format="A4"):
 
         self.name = path_to_dxf.split("/")[-1].split(".")[0]
@@ -20,7 +21,7 @@ class FGenerator:
 
         self.instructions = self.reader.read()
 
-        self.vis = Visual("A4")
+        self.vis = Visual("A4", scale=vis_scale)
 
     def gen_instructions(self):
         for segments in self.instructions:

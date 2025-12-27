@@ -7,13 +7,15 @@ def font(size):
     return ImageFont.truetype("arial.ttf", size)
 
 class Visual:
-    scale = 10/1
-
+    """
+    Simulate the movement of the nozzle and scale the output
+    """
     nozzle_speed = 10
 
-    def __init__(self, size: tuple[int, int]|str):
+    def __init__(self, size: tuple[int, int]|str, scale=1.0):
         self.nozzle_x, self.nozzle_y = 0.0, 0.0
         self.pen_is_down = False
+        self.scale = scale
 
         if type(size) == str: # convert from str type to x_mm, y_mm
             if size in FCODE.paper_sizes.keys():
@@ -21,18 +23,19 @@ class Visual:
             else:
                 raise KeyError("Paper size: {" + size + "} is invalid")
 
-        self.size_x = round(size[0] * Visual.scale)
-        self.size_y = round(size[1] * Visual.scale)
+        self.size_x = round(size[0] * self.scale)
+        self.size_y = round(size[1] * self.scale)
 
         self.img = Image.new("RGB", (self.size_x, self.size_y), color="white")
         self.draw = ImageDraw.Draw(self.img)
 
     def flip_y(self, y:float):
+        """default dxf has y coordinates flipped"""
         return self.size_y - y
 
 
     def dot(self, pos: tuple[int, int]):
-        x, y = pos[0] * Visual.scale, pos[1] * Visual.scale
+        x, y = pos[0] * self.scale, pos[1] * self.scale
 
         self.draw.point((x, y), "black")
 
@@ -42,8 +45,8 @@ class Visual:
             self.dot(point)
 
     def line(self, start_pos: tuple[float, float], end_pos:tuple[float, float], c=(0,0,0)):
-        s_x, s_y = start_pos[0] * Visual.scale, start_pos[1] * Visual.scale
-        e_x, e_y = end_pos[0]   * Visual.scale, end_pos[1]   * Visual.scale
+        s_x, s_y = start_pos[0] * self.scale, start_pos[1] * self.scale
+        e_x, e_y = end_pos[0]   * self.scale, end_pos[1]   * self.scale
 
         s_y = self.flip_y(s_y)
         e_y = self.flip_y(e_y)
