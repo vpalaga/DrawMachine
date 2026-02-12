@@ -1,7 +1,9 @@
 # Draw Machine by VPalaga 
 
-The idea is to create a 2d axis robot that can be controlled by the .FCODE protocol.  
-The Goal: 100% working reliable x, y system. 
+The idea is to create a 2 axis (x, y) robot that can be controlled by the .FCODE protocol. Adding the Z   
+axis shouldn't be very difficult, just raise the frame and move the print plane down. The FCODE is my    
+own simplification of .gcode protocol.   
+**The Goal: 100% working reliable x, y system.** 
 
 >Partially based on Scrabble bot Code.
 ---
@@ -30,7 +32,8 @@ PENDOWN
 ---
 ## Raspberry Pi
 *Python on Raspberry Pi 4B*   
-+ File reading
++ file reading
++ run `MotorControl`
 + move generation
 + send float x, y coordinates to Raspberry Pico 2W
 + control servo on the head (*depending on the current use*)
@@ -41,7 +44,7 @@ PENDOWN
 > To implement multifunctions, the Inscructions need to have be adjusted to the new argument length 
 ---
 ## Raspberry Pico  
-Microcontroller running a `c` loop: 
+Microcontroller running the main `c` loop, basicaly the PICO is just a dual simultanious stepper driver: 
 + recive functions
 + respond with error/confirmantion messages
 + control the end swiches   
