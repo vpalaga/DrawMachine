@@ -1,5 +1,4 @@
 from MotorOverclass import StepperMotor
-from SwitchHandler import SwitchOverclass
 
 class MotorController:
     """control x and y motors simultaneously with move(x, y) function, use calibrate to reset motor positions to 0, 0"""
@@ -26,9 +25,11 @@ class MotorController:
             self.calibrate()
 
 
+"""
+    The call "CALIBRATE" will run internally in the pico
 
     def calibrate(self) -> None:
-        """move to absolute right bottom corner: |_"""
+        ""move to absolute right bottom corner: |_""
         x_switch, y_switch = self.switches.get_states()
         x, y = -1, -1
         while not (x_switch and y_switch): # repeat until both switches are conducting [logic tested 27.12.25]
@@ -46,7 +47,7 @@ class MotorController:
 
         #deal with starting offset
         self.mm_move(x=self.starting_offset[0], y=self.starting_offset[1])
-
+"""
 
     def move_to_mm(self, x_target:float, y_target:float)->None:
         """(target - current)(x, y)"""

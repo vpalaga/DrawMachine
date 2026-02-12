@@ -1,3 +1,5 @@
+# remake this in c++
+
 class SwitchOverclass:
     """connect the switches to raspberry pi main (NOT microcontroller!)"""
     def __init__(self):
@@ -16,4 +18,5 @@ class Switch:
         # low lever stuff
         print("getting state for: " + self.name) # rf later
         state = False
+        #GPIO pin will draw current if the swich is closed = reached the 0 pos
         return state
