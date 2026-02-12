@@ -9,6 +9,7 @@ class MotorController:
     def __init__(self, name="motorController", move_format="A4"|tuple[float,float]):
         self.name = name
 
+        #steppermotor objects to store the bullshit motor data
         self.x_motor = StepperMotor(name="x_motor", max_pos_mm=270) # measure
         self.y_motor = StepperMotor(name="y_motor", max_pos_mm=210) # measure
 
@@ -22,7 +23,8 @@ class MotorController:
 
         #starting sequence
         if not __name__ == "__main__": # when running from this file don't proceed with flowing, running from main:
-            self.calibrate()
+            # "CALIBRATE" the driver
+            #self.calibrate()
 
 
 """
