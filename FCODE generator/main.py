@@ -23,11 +23,13 @@ class FGenerator:
 
         self.vis = Visual("A4", scale=vis_scale)
 
-    def gen_instructions(self):
-        for segments in self.instructions:
-            x, y = segments[0][0], segments[0][1]
+    def generate_instructions(self):
+        for segments in self.instructions: #segments are colsed loops of lines 
 
-            if not (x, y) == (self.vis.nozzle_x, self.vis.nozzle_y): # move to next segment with lifting the nozzle
+            x, y = segments[0][0], segments[0][1]
+            
+            # move to next segment with lifting the nozzle
+            if not (x, y) == (self.vis.nozzle_x, self.vis.nozzle_y): 
                 self.vis.penup()
                 self.file.add_instruction(Instruction("PENUP"))
 
@@ -37,14 +39,17 @@ class FGenerator:
                 self.vis.pendown()
                 self.file.add_instruction(Instruction("PENDOWN"))
 
-            else:
+            else: # the nozzle is already at the position -> no need for movement
                 pass
 
-            for segment in segments[1:]:
+            for segment in segments[1:]: # add each coordinate of the loop / segment
                 self.file.add_instruction(Instruction("MOVE",  *segment))
                 self.vis.move(*segment)
 
 
-    def save(self):
-        self.vis.show()
+    def save(self, show_visualization=True):
         self.file.save()
+
+        if show_visualization:
+            self.vis.show()
+        
