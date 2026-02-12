@@ -34,9 +34,8 @@ PENDOWN
 *Python on Raspberry Pi 4B*   
 + file reading
 + run `MotorControl`
-+ move generation
 + send float x, y coordinates to Raspberry Pico 2W
-+ control servo on the head (*depending on the current use*)
++ control servo on the head (*depending on the current use*) or head in general
 + > maybe even web server host for FCODE upload or remote stearing
 
 
@@ -47,7 +46,7 @@ PENDOWN
 Microcontroller running the main `c` loop, basicaly the PICO is just a dual simultanious stepper driver: 
 + recive functions
 + respond with error/confirmantion messages
-+ control the end swiches   
++ drive the end swiches   
 + Send logic to x, y TMC 2209 Drivers   
 ---
 
