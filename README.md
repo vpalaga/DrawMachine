@@ -24,7 +24,7 @@ gen.generate_instructions()
 gen.save()
 ```
 
-Payload from Pi to Pico example:
+Payload from Pi to Pico examples (FCODE):
 ```
 CALIBRATE
 MOVE 45.478 3.671
@@ -48,8 +48,8 @@ PENDOWN
 + file reading
 + run `MotorControl`
 + send float x, y coordinates to Raspberry Pico 2W
-+ control servo on the head (*depending on the current use*) or head in general
-+ > maybe even web server host for FCODE upload or remote stearing
++ control servo on the head (*depending on the current use*) or head in general (PCA PCB)
++ > maybe even web server host for FCODE upload or remote stearing 
 
 
 
@@ -58,11 +58,11 @@ PENDOWN
 ## Raspberry Pico  
 Microcontroller running the main `c` loop, basicaly the PICO is just a dual simultanious stepper driver: 
 + recive functions
-+ respond with error/confirmantion messages
-+ drive the end swiches   
++ respond with error/confirmantion messages (CDC)
++ drive the end swiches (draw current when closed)
 + Send logic to x, y TMC 2209 Drivers
 
-I am using **Raspberry Pi Pico VS Code extension** to write, compile and upload the program to my Pico.
+I am using **Raspberry Pi Pico VS Code extension** to write, compile and upload the code to my Pico.
 
 ---
 ### The idea for the c++ code running on the pico:
