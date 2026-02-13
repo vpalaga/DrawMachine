@@ -8,6 +8,7 @@ from ezdxf.lldxf.const import (
     MTEXT_MIDDLE_LEFT, MTEXT_MIDDLE_CENTER, MTEXT_MIDDLE_RIGHT,
     MTEXT_BOTTOM_LEFT, MTEXT_BOTTOM_CENTER, MTEXT_BOTTOM_RIGHT,
 )
+from ezdxf.path import make_path
 
 
 def gen_circle(center:tuple[float, float], r:float, segments:int):
@@ -107,7 +108,6 @@ def ellipse_to_polyline(ellipse, line_len: float):
 
     return pts
 
-from ezdxf.path import make_path
 
 def solid_to_edges(entity):
     """
@@ -265,7 +265,3 @@ class Reader:
 
         #self.vis.show()
         return segments
-
-    
-if __name__ == "__main__":
-    Reader("Drawing 2.dxf").read()

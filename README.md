@@ -15,10 +15,13 @@ own simplification of .gcode protocol.
 ``` python
 from FCODEgenerator.main import FGenerator
 
+# create a generatin object
 gen = FGenerator("train_v1.dxf", acc=.1, vis_scale=10, text=False)
-gen.gen_instructions()
-gen.save()
 
+# generate the FCODE from the provided dxf file
+gen.generate_instructions()
+ # the save format / location can be configured under gen.py method: save()
+gen.save()
 ```
 
 Payload from Pi to Pico example:
@@ -124,3 +127,9 @@ ser.write(b"Hello from Python host!\r\n")
 | M3 12mm hex bolt| ~30 | mate | not shure about the amount|
 | M3 nut | ~80 | mate | not shure about the amount |
 
+---
+
+# Code Documentation
+
+## Libraries used:
++ ezdxf: to read .dxf files
