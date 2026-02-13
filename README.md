@@ -40,7 +40,7 @@ PENDOWN
 | *PENUP* | 0 | set the pen positon to be up |
 | *PENDOWN* | 0 | set the pen position to be down|   
 
-> Current functions: (can be found under `FCODE generator.segmentFunctions.Instruction.instructions_parameters_len.keys()`
+> Current functions: (can be found under `FCODEgenerator.segmentFunctions.Instruction.instructions_parameters_len.keys()`
 
 ---
 ## Raspberry Pi
