@@ -1,6 +1,11 @@
 *.FCODE
 .venv/
 
+.vscode
+!.vscode/*
+build
+.build/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
