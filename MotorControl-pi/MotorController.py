@@ -13,8 +13,6 @@ class MotorController:
         self.x_motor = StepperMotor(name="x_motor", max_pos_mm=270) # measure
         self.y_motor = StepperMotor(name="y_motor", max_pos_mm=210) # measure
 
-        self.switches = SwitchOverclass()
-
         # deal with starting offset (x, y)
         if move_format in MotorController.starting_offsets_user_presets.keys():# and type(move_format) == str:
             self.starting_offset = MotorController.starting_offsets_user_presets[str(move_format)] # (offset_x, offset_y)
@@ -25,35 +23,11 @@ class MotorController:
         if not __name__ == "__main__": # when running from this file don't proceed with flowing, running from main:
             # "CALIBRATE" the driver
             #self.calibrate()
-
-
-"""
-    The call "CALIBRATE" will run internally in the pico
-
-    def calibrate(self) -> None:
-        ""move to absolute right bottom corner: |_""
-        x_switch, y_switch = self.switches.get_states()
-        x, y = -1, -1
-        while not (x_switch and y_switch): # repeat until both switches are conducting [logic tested 27.12.25]
-            if x_switch:
-                x = 0
-            if y_switch:
-                y = 0
-
-            self.step_move(x, y) # calibration might go below 0
-
-            x_switch, y_switch = self.switches.get_states()
-
-        self.x_motor.reset()
-        self.y_motor.reset()
-
-        #deal with starting offset
-        self.mm_move(x=self.starting_offset[0], y=self.starting_offset[1])
-"""
+            pass
 
     def move_to_mm(self, x_target:float, y_target:float)->None:
         """(target - current)(x, y)"""
-        x_move, y_move = x_target - self.x_motor.pos_mm, y_target - self.y_motor.pos_mm
+        x_move, y_move = x_target - self.x_motor.pos_mm, y_target - self.y_mo0tor.pos_mm
         self.mm_move(x=x_move,y=y_move)
 
     def mm_move(self, x:float, y:float)->None:
@@ -86,7 +60,6 @@ class MotorController:
 
 
     def step_move(self, x:int, y:int)->None:
-        """move by x, y steps in positive or negative direction"""
-
+        
 
         # do the low level stuff here

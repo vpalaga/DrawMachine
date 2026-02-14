@@ -1,27 +1,65 @@
 import serial
 import time
+import settings as S
+
+class FormatError(Exception):
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
 
 # replace with your Pico’s serial port name;
 # on Linux it might be "/dev/ttyACM0" or similar
 # on Windows something like "COM3"
-SERIAL_PORT = "COM14"
-BAUDRATE = 115200
+class Transmiter:
+    SERIAL_PORT = "COM14"
+    BAUDRATE = 115200
+    RESPONSE_TIMEOUT_S = 30 # it can take long to travel long distance
 
-# open the serial connection
-ser = serial.Serial(SERIAL_PORT, BAUDRATE, timeout=1)
+    CHECK_TIMEOUT_CYCLES = 100
 
-time.sleep(2)    # short delay to let the port settle
-ser.write(67)
+    def __init__(self, port=SERIAL_PORT, baudrate=BAUDRATE):
+        self.SERIAL_PORT = port
+        self.BAUDRATE = baudrate
+    # open the serial connection
+        self.ser = serial.Serial(self.SERIAL_PORT, self.BAUDRATE, timeout=1)
+
+        time.sleep(2)    # short delay to let the port settle
+
+    def send(self, message:str): 
+        """
+        
+        0 = all good;
+        1 = error;
+        2 = timeout
+        """
+        #check weter the message contains ";"
+        if not S.SPEED_MODE:
+            if list(message.strip())[-1] != ";":
+                raise FormatError("message: " + message + " is missing a ';'")
+            
+        self.ser.write(message)
+        
+        start_time = time.time()
+
+        #wait for response
+        cycle = 0
+        while True:# wait for responce indefinetly add time out
+            #either 0 or 1 or ""
+            response = self.ser.readline().decode().strip()
+            
+            if response != "": 
+                return bool(int(response))
+            
+            if cycle >= Transmiter.CHECK_TIMEOUT_CYCLES:
+                current_time = time.time()
+                
+                if current_time - start_time <= Transmiter.RESPONSE_TIMEOUT_S:
+                    return 2 #
+
+                cycle = 0 # reset cycle 
+
+            time.sleep(S.TRANSMITER_RESPONSE_LOOP_WAIT) #bottleneck?
+            cycle += 1
     
-# send a line to the Pico
-try:
-    while True:
-
-        line_raw = ser.readline()
-        line = line_raw.decode().strip()
-        if line != "Got char:" and line != "":
-            print(line)
-        time.sleep(.01)
-finally:
-    ser.close()
-    exit()
+    def __deinit__(self):
+        self.ser.close()
