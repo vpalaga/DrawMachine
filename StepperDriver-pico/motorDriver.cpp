@@ -3,6 +3,7 @@
 #include "hardware/i2c.h"
 #include "hardware/timer.h"
 #include "hardware/clocks.h"
+#include "algorithm"
 
 // I2C defines
 // This example will use I2C0 on GPIO8 (SDA) and GPIO9 (SCL) running at 400KHz.
@@ -103,7 +104,9 @@ class Stepper{
 
         }
 
-        void step(bool dir, int steps){
+        void step(bool dir, int steps, int delay){
+            us_delay = delay;
+
             gpio_put(dirPin, dir);
 
                 for (int i = 0; i < steps; i++) {
@@ -120,6 +123,9 @@ class Stepper{
 int main()
 {
     stdio_init_all();
+    
+    // wait to let the CPC conn. settle
+    sleep_ms(4000);
 
     // I2C Initialisation. Using it at 400Khz.
     i2c_init(I2C_PORT, 400*1000);
@@ -148,12 +154,15 @@ int main()
 
     //Steppers
     Stepper xStepper(X_STP_STEPPER_PIN, X_DIR_STEPPER_PIN, 1000);
+    
+    int delay = 100;
 
     while (true) {
-        xStepper.step(true, 200);   // 200 steps forward
-        sleep_ms(500);
-        xStepper.step(false, 200);  // 200 steps backward
-        sleep_ms(500);
+        printf("Delay: %d \n", delay);
+
+        xStepper.step(true, 1600, delay);   // 200 steps forward
+        sleep_ms(150);
+    
     }
     
 }
