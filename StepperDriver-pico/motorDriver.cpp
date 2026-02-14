@@ -3,12 +3,17 @@
 #include "hardware/i2c.h"
 #include "hardware/timer.h"
 #include "hardware/clocks.h"
+
 // I2C defines
 // This example will use I2C0 on GPIO8 (SDA) and GPIO9 (SCL) running at 400KHz.
 // Pins can be changed, see the GPIO function select table in the datasheet for information on GPIO assignments
 #define I2C_PORT i2c0
 #define I2C_SDA 8
 #define I2C_SCL 9
+
+// end swich pins
+#define X_SWICH_GPIO 26 // pin 31
+#define Y_SWICH_GPIO 27 // pin 32
 
 int64_t alarm_callback(alarm_id_t id, void *user_data) {
     // Put your timeout handler code in here
@@ -17,23 +22,33 @@ int64_t alarm_callback(alarm_id_t id, void *user_data) {
 
 // deifne the GPIO ports of the draw swiches terminals
 // both thru swich to GND (pin 33, one above)
-const uint X_SWICH_GPIO = 26; // pin 31
-const uint Y_SWICH_GPIO = 27; // pin 32
 
 class Swich{
     public:
+        // GPIO Pin
         uint pin;
         Swich(uint pin_init_){ // GPIO pin of the swich
             pin = pin_init_;
-            // set up the PINS thru internal resisitor to 50KOhms
 
+            gpio_init(pin);
+            gpio_set_dir(pin, GPIO_IN);
+            // set up the PINS thru internal resisitor to 50KΩ
+            gpio_pull_up(pin);   // enable internal pull-up
         }
 
-    bool getSwichState(){
-        // false = open, true = closed -> stop movement
-        // check wheter they are pulling any current
+        bool getSwichState(){
+            // false = open, true = closed -> stop movement
+            // check wheter they are pulling any current
+            
+            if (!gpio_get(pin)) {   // LOW = pressed
+                printf("Switch at %d pressed \n", pin);
+                return true;
 
-    }
+            } else {
+                printf("Switch at %d released\n", pin);
+                return false;
+            }
+        }
 
 };
 
@@ -60,12 +75,12 @@ int main()
     // For more examples of clocks use see https://github.com/raspberrypi/pico-examples/tree/master/clocks
 
     //set up the x,y end swiches
-    Swich xSwich(X_SWICH_GPIO);
-    Swich ySwich(Y_SWICH_GPIO);
+    Swich xSwich(X_SWICH_GPIO); // GPIo 26
+    Swich ySwich(Y_SWICH_GPIO); // GPIO 27
 
     while (true) {
+        bool state = ySwich.getSwichState();
         sleep_ms(1000);
-        printf("Hello, world!\n");
+
     }
 }
-// time to sleep fucker :D
