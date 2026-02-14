@@ -17,6 +17,10 @@
 #define X_SWICH_GPIO 26 // pin 31
 #define Y_SWICH_GPIO 27 // pin 32
 
+// define the TMC2209 pins
+#define X_DIR_STEPPER_PIN 20
+#define X_STP_STEPPER_PIN 21
+
 int64_t alarm_callback(alarm_id_t id, void *user_data) {
     // Put your timeout handler code in here
     return 0;
@@ -79,6 +83,40 @@ class LED{
         }
 };
 
+class Stepper{
+    public:
+        uint stepPin;
+        uint dirPin;
+        int us_delay;
+
+        Stepper(uint stepPin_init_, uint dirPin_init_, int us_delay_init_){
+            stepPin = stepPin_init_;
+            dirPin = dirPin_init_;
+            us_delay = us_delay_init_;
+            
+            // init the out pis for the stepper
+            gpio_init(stepPin);
+            gpio_set_dir(stepPin, GPIO_OUT);
+
+            gpio_init(dirPin);
+            gpio_set_dir(dirPin, GPIO_OUT);
+
+        }
+
+        void step(bool dir, int steps){
+            gpio_put(dirPin, dir);
+
+                for (int i = 0; i < steps; i++) {
+                    gpio_put(stepPin, 1);
+                    sleep_us(us_delay);
+
+                    gpio_put(stepPin, 0);
+                    sleep_us(us_delay);
+                }
+        }
+
+};
+
 int main()
 {
     stdio_init_all();
@@ -101,20 +139,21 @@ int main()
     // For more examples of clocks use see https://github.com/raspberrypi/pico-examples/tree/master/clocks
 
     //set up the x,y end swiches
-    Swich xSwich(X_SWICH_GPIO); // GPIo 26
-    Swich ySwich(Y_SWICH_GPIO); // GPIO 27
+    //Swich xSwich(X_SWICH_GPIO); // GPIo 26
+    //Swich ySwich(Y_SWICH_GPIO); // GPIO 27
     
     // leds
-    LED redLed(13);
-    LED greenLed(14);
+    //LED redLed(13);
+    //LED greenLed(14);
+
+    //Steppers
+    Stepper xStepper(X_STP_STEPPER_PIN, X_DIR_STEPPER_PIN, 1000);
 
     while (true) {
-        bool state = ySwich.getSwichState();
-        
-        redLed.setState(state);
-        greenLed.setState(!state);
-
-        sleep_ms(50);
-
+        xStepper.step(true, 200);   // 200 steps forward
+        sleep_ms(500);
+        xStepper.step(false, 200);  // 200 steps backward
+        sleep_ms(500);
     }
+    
 }
