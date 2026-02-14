@@ -12,6 +12,8 @@
 #define I2C_SCL 9
 
 // end swich pins
+// deifne the GPIO ports of the draw swiches terminals
+// both thru swich to GND (pin 33, one above)
 #define X_SWICH_GPIO 26 // pin 31
 #define Y_SWICH_GPIO 27 // pin 32
 
@@ -20,8 +22,8 @@ int64_t alarm_callback(alarm_id_t id, void *user_data) {
     return 0;
 }
 
-// deifne the GPIO ports of the draw swiches terminals
-// both thru swich to GND (pin 33, one above)
+// toggle function true -> false; false -> true
+bool toggleValue(bool input) { return !input; }
 
 class Swich{
     public:
@@ -52,6 +54,30 @@ class Swich{
 
 };
 
+class LED{
+    public:
+        uint pin;
+        bool state = false;
+
+        LED(uint pin_init_){
+            pin = pin_init_;
+            
+            gpio_init(pin);             // initialize the GPIO pin
+            gpio_set_dir(pin, GPIO_OUT);// set it as output
+        }
+
+        void toggleLed(){
+            state = toggleValue(state);
+
+            gpio_put(pin, state);
+        }
+
+        void setState(bool set_to){
+            state = set_to;
+
+            gpio_put(pin, state);
+        }
+};
 
 int main()
 {
@@ -77,10 +103,18 @@ int main()
     //set up the x,y end swiches
     Swich xSwich(X_SWICH_GPIO); // GPIo 26
     Swich ySwich(Y_SWICH_GPIO); // GPIO 27
+    
+    // leds
+    LED redLed(13);
+    LED greenLed(14);
 
     while (true) {
         bool state = ySwich.getSwichState();
-        sleep_ms(1000);
+        
+        redLed.setState(state);
+        greenLed.setState(!state);
+
+        sleep_ms(50);
 
     }
 }
