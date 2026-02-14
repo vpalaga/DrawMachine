@@ -16,21 +16,23 @@ int64_t alarm_callback(alarm_id_t id, void *user_data) {
 }
 
 // deifne the GPIO ports of the draw swiches terminals
-const uint X_SWICH_GPIO;
-const uint Y_SWICH_GPIO;
+// both thru swich to GND (pin 33, one above)
+const uint X_SWICH_GPIO = 26; // pin 31
+const uint Y_SWICH_GPIO = 27; // pin 32
 
 class Swich{
     public:
         uint pin;
         Swich(uint pin_init_){ // GPIO pin of the swich
             pin = pin_init_;
+            // set up the PINS thru internal resisitor to 50KOhms
+
         }
 
     bool getSwichState(){
         // false = open, true = closed -> stop movement
-        // set up the PINS thru internal resisitor to 50KOhms
         // check wheter they are pulling any current
-        
+
     }
 
 };
@@ -43,8 +45,6 @@ int main()
     // I2C Initialisation. Using it at 400Khz.
     i2c_init(I2C_PORT, 400*1000);
     
-    sleep_ms(5000);
-
     gpio_set_function(I2C_SDA, GPIO_FUNC_I2C);
     gpio_set_function(I2C_SCL, GPIO_FUNC_I2C);
     gpio_pull_up(I2C_SDA);
