@@ -20,24 +20,24 @@ class Transmiter:
     def __init__(self, port=SERIAL_PORT, baudrate=BAUDRATE):
         self.SERIAL_PORT = port
         self.BAUDRATE = baudrate
-    # open the serial connection
+
+        # open the serial connection
         self.ser = serial.Serial(self.SERIAL_PORT, self.BAUDRATE, timeout=1)
 
         time.sleep(2)    # short delay to let the port settle
 
     def send(self, message:str): 
         """
-        
         0 = all good;
         1 = error;
         2 = timeout
         """
-        #check weter the message contains ";"
+        #check weter the message contains '\n'
         if not S.SPEED_MODE:
-            if list(message.strip())[-1] != ";":
-                raise FormatError("message: " + message + " is missing a ';'")
+            if list(message)[-1] != '\n':
+                raise FormatError("message: " + message + " is missing a '\n'")
             
-        self.ser.write(message)
+        self.ser.write(message.encode("utf-8")) # send encoded byte message
         
         start_time = time.time()
 
@@ -47,14 +47,14 @@ class Transmiter:
             #either 0 or 1 or ""
             response = self.ser.readline().decode().strip()
             
-            if response != "": 
-                return bool(int(response))
+            if response != "": # resturn pth 1, 0, string
+                return response
             
             if cycle >= Transmiter.CHECK_TIMEOUT_CYCLES:
                 current_time = time.time()
                 
                 if current_time - start_time <= Transmiter.RESPONSE_TIMEOUT_S:
-                    return 2 #
+                    return 2 # timeout
 
                 cycle = 0 # reset cycle 
 

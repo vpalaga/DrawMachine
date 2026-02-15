@@ -15,12 +15,20 @@
 // end swich pins
 // deifne the GPIO ports of the draw swiches terminals
 // both thru swich to GND (pin 33, one above)
-#define X_SWICH_GPIO 26 // pin 31
-#define Y_SWICH_GPIO 27 // pin 32
+const int X_SWICH_GPIO = 26; // pin 31
+const int Y_SWICH_GPIO = 27; // pin 32
 
-// define the TMC2209 pins
-#define X_DIR_STEPPER_PIN 20
-#define X_STP_STEPPER_PIN 21
+// define the TMC2209 pins 1
+const int X_DIR_STEPPER_PIN = 20;
+const int X_STP_STEPPER_PIN = 21;
+
+// TMC 2
+const int Y_DIR_STEPPER_PIN = 18;
+const int Y_STP_STEPPER_PIN = 19;
+
+// LEDs wire to GND (pin 23)
+const int LED_1_PIN = 16;
+const int LED_2_PIN = 17;
 
 int64_t alarm_callback(alarm_id_t id, void *user_data) {
     // Put your timeout handler code in here
@@ -28,7 +36,6 @@ int64_t alarm_callback(alarm_id_t id, void *user_data) {
 }
 
 // toggle function true -> false; false -> true
-bool toggleValue(bool input) { return !input; }
 
 class Swich{
     public:
@@ -72,7 +79,7 @@ class LED{
         }
 
         void toggleLed(){
-            state = toggleValue(state);
+            state = !state;
 
             gpio_put(pin, state);
         }
@@ -120,12 +127,30 @@ class Stepper{
 
 };
 
+// wait for connection
+void waitForCDC(){
+    while (!stdio_usb_connected()) {
+        sleep_ms(100);
+    }
+}
+
+// stuff for CDC full string recive
+static const int MAX_LEN = 128;
+char rx_buf[MAX_LEN];
+int rx_pos = 0;
+
+void process_received(const char *buf, int len) {
+    // handle complete message (null-terminated)
+    printf("Got: %s\n", buf);
+}
+
 int main()
 {
+    if (true){ // for editor, can be hidden
     stdio_init_all();
-    
-    // wait to let the CPC conn. settle
-    sleep_ms(4000);
+
+
+
 
     // I2C Initialisation. Using it at 400Khz.
     i2c_init(I2C_PORT, 400*1000);
@@ -143,6 +168,7 @@ int main()
     printf("System Clock Frequency is %d Hz\n", clock_get_hz(clk_sys));
     printf("USB Clock Frequency is %d Hz\n", clock_get_hz(clk_usb));
     // For more examples of clocks use see https://github.com/raspberrypi/pico-examples/tree/master/clocks
+    }
 
     //set up the x,y end swiches
     //Swich xSwich(X_SWICH_GPIO); // GPIo 26
@@ -154,15 +180,30 @@ int main()
 
     //Steppers
     Stepper xStepper(X_STP_STEPPER_PIN, X_DIR_STEPPER_PIN, 1000);
-    
-    int delay = 100;
 
+    printf("USB CDC serial ready!\n");
+    // wait arguments
     while (true) {
-        printf("Delay: %d \n", delay);
+        // get full buffer
+        while (true) {
+            int c = getchar_timeout_us(0);
+            if (c == PICO_ERROR_TIMEOUT) break;     // no more data
+            if (rx_pos < MAX_LEN - 1) {
+                rx_buf[rx_pos++] = (char)c;
+            }
+            // optional: detect end-of-line to process early, should allways be the case
+            if (c == '\n' || c == '\r') {
+                break;
+            }
+        }
 
-        xStepper.step(true, 1600, delay);   // 200 steps forward
-        sleep_ms(150);
-    
+        if (rx_pos > 0) {
+            rx_buf[rx_pos] = '\0';    // null terminate
+            process_received(rx_buf, rx_pos);
+            rx_pos = 0;               // reset for next message
+        }
+
+        sleep_ms(10);    
     }
     
 }
