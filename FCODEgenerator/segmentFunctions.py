@@ -2,11 +2,11 @@ import math
 
 class Instruction:
     instructions_parameters_len = { # check if the parameters are correct
-        "MOVE": 2,
-        "PENUP": 0,
-        "PENDOWN": 0,
-        "WAIT": 1,
-        "CALIBRATE": 0}
+        "MOV": 2,
+        "PUP": 0,
+        "PDN": 0,
+        "WAT": 1,
+        "CLB": 0}
 
     def __init__(self, i_type:str, *args:int|float, acc=0.01):
         self.i_type = i_type.upper()  # instruction type

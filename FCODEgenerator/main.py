@@ -31,19 +31,19 @@ class FGenerator:
             # move to next segment with lifting the nozzle
             if not (x, y) == (self.vis.nozzle_x, self.vis.nozzle_y): 
                 self.vis.penup()
-                self.file.add_instruction(Instruction("PENUP"))
+                self.file.add_instruction(Instruction("PUP"))
 
                 self.vis.move(x, y) # move to first segment pos
-                self.file.add_instruction(Instruction("MOVE", x, y))
+                self.file.add_instruction(Instruction("MOV", x, y))
 
                 self.vis.pendown()
-                self.file.add_instruction(Instruction("PENDOWN"))
+                self.file.add_instruction(Instruction("PDN"))
 
             else: # the nozzle is already at the position -> no need for movement
                 pass
 
             for segment in segments[1:]: # add each coordinate of the loop / segment
-                self.file.add_instruction(Instruction("MOVE",  *segment))
+                self.file.add_instruction(Instruction("MOV",  *segment))
                 self.vis.move(*segment)
 
 
