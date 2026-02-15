@@ -7,6 +7,11 @@ class FormatError(Exception):
         self.message = message
         super().__init__(self.message)
 
+class ReturnError(Exception):
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
+
 # replace with your Pico’s serial port name;
 # on Linux it might be "/dev/ttyACM0" or similar
 # on Windows something like "COM3"
@@ -26,7 +31,7 @@ class Transmiter:
 
         time.sleep(2)    # short delay to let the port settle
 
-    def send(self, message:str): 
+    def send(self, message:str) -> bool: 
         """
         0 = all good;
         1 = error;
@@ -48,7 +53,20 @@ class Transmiter:
             response = self.ser.readline().decode().strip()
             
             if response != "": # resturn pth 1, 0, string
-                return response
+
+                if not S.SPEED_MODE: # check weter the response can be converted to a bool
+                    if not response.isdigit():
+                        raise ReturnError("response: '" + response + "' is not a integer")
+                    
+                    else:
+                        int_response = int(response)
+                        if not int_response == 0 or int_response == 1:
+                            raise ReturnError("response: '" + response + "' is not between 0 and 1 -> can't be converted to bool")
+                        
+                        else:
+                            return bool(int_response)
+                
+                return bool(int(response))
             
             if cycle >= Transmiter.CHECK_TIMEOUT_CYCLES:
                 current_time = time.time()

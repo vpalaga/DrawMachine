@@ -7,8 +7,12 @@ r = RandomWords()
 
 transm = Transmiter()
 
-while True:
-    responce = transm.send(r.get_random_word() + "\n")
+try:
+    while True:
+        word = r.get_random_word()
+        responce = transm.send(word + "\n")
 
-    print(responce)
-    time.sleep(.01)
+        print(responce, word)
+        time.sleep(.1)
+finally:
+    transm.__deinit__()

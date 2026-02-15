@@ -12,6 +12,12 @@
 #define I2C_SDA 8
 #define I2C_SCL 9
 
+int64_t alarm_callback(alarm_id_t id, void *user_data) {
+    // Put your timeout handler code in here
+    return 0;
+}
+
+
 // end swich pins
 // deifne the GPIO ports of the draw swiches terminals
 // both thru swich to GND (pin 33, one above)
@@ -30,12 +36,20 @@ const int Y_STP_STEPPER_PIN = 19;
 const int LED_1_PIN = 16;
 const int LED_2_PIN = 17;
 
-int64_t alarm_callback(alarm_id_t id, void *user_data) {
-    // Put your timeout handler code in here
-    return 0;
-}
+// CDC buffer max len
+static const int BUF_MAX_LEN = 128;
 
-// toggle function true -> false; false -> true
+//=============================================================
+
+// stuff for CDC full string recive
+char rx_buf[BUF_MAX_LEN];
+int rx_pos = 0;
+
+// state of recived message
+bool recivedMessageState;
+
+//=============================================================
+
 
 class Swich{
     public:
@@ -134,23 +148,25 @@ void waitForCDC(){
     }
 }
 
-// stuff for CDC full string recive
-static const int MAX_LEN = 128;
-char rx_buf[MAX_LEN];
-int rx_pos = 0;
-
-void process_received(const char *buf, int len) {
+bool process_received(const char *buf, int len) {
+    // return false (0): the message is OK 
+    // return true  (1): the message is unsable
     // handle complete message (null-terminated)
-    printf("Got: %s\n", buf);
+    //printf("Got: %s\n", buf);
+    return false;
+}
+
+void confirm_recive(bool state){
+    // false = all good
+    // true error
+    printf("%d\n", state); // dont forget to end message by '\n'
 }
 
 int main()
 {
     if (true){ // for editor, can be hidden
+    
     stdio_init_all();
-
-
-
 
     // I2C Initialisation. Using it at 400Khz.
     i2c_init(I2C_PORT, 400*1000);
@@ -182,13 +198,13 @@ int main()
     Stepper xStepper(X_STP_STEPPER_PIN, X_DIR_STEPPER_PIN, 1000);
 
     printf("USB CDC serial ready!\n");
-    // wait arguments
+
     while (true) {
         // get full buffer
         while (true) {
             int c = getchar_timeout_us(0);
             if (c == PICO_ERROR_TIMEOUT) break;     // no more data
-            if (rx_pos < MAX_LEN - 1) {
+            if (rx_pos < BUF_MAX_LEN - 1) {
                 rx_buf[rx_pos++] = (char)c;
             }
             // optional: detect end-of-line to process early, should allways be the case
@@ -199,11 +215,17 @@ int main()
 
         if (rx_pos > 0) {
             rx_buf[rx_pos] = '\0';    // null terminate
-            process_received(rx_buf, rx_pos);
-            rx_pos = 0;               // reset for next message
+            
+            // save the state, false=good, true=unusable
+            recivedMessageState = process_received(rx_buf, rx_pos);
+            // send out the state
+            confirm_recive(recivedMessageState);
+            
+            // reset for next message
+            rx_pos = 0;
         }
 
-        sleep_ms(10);    
+        sleep_ms(1); // bottle neck, ignore for now
     }
     
 }
