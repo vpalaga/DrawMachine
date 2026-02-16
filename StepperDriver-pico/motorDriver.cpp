@@ -4,6 +4,11 @@
 #include "hardware/timer.h"
 #include "hardware/clocks.h"
 #include "algorithm"
+#include <string>
+#include <vector>
+#include <sstream>
+
+using namespace std;
 
 // I2C defines
 // This example will use I2C0 on GPIO8 (SDA) and GPIO9 (SCL) running at 400KHz.
@@ -155,6 +160,38 @@ bool process_received(const char *buf, int len) {
     //printf("Got: %s\n", buf);
     return false;
 }
+
+pair<string, vector<float>> get_instruction_details(string instruction){
+	// return string Instruction type, int* args4
+
+	istringstream iss(instruction);
+	vector<string> parts;
+	vector<float> arguments = {0.0f};// store
+	string part;
+
+	string instruction_type; // first object in parts
+	int parameters_size;
+
+	while (iss >> part) {   // splits on whitespace by default
+		parts.push_back(part);
+	}
+
+	instruction_type = parts[0];
+	parameters_size = parts.size() - 1; // ignore the firts part
+
+	for (int i = 1; i<parameters_size+1;i++) { // shift i by +1, so i can acces vector[i] ang skip the first element
+		// convert str argumetents to floats
+		arguments.push_back(stof(parts[i]));
+	}
+	/*
+	for (const auto&  : words) {
+
+		cout << w << "\n";
+	}
+	*/
+	return {instruction_type, arguments};
+}
+
 
 void confirm_recive(bool state){
     // false = all good
