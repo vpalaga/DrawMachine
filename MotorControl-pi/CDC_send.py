@@ -31,19 +31,21 @@ class Transmiter:
 
         time.sleep(2)    # short delay to let the port settle
 
-    def send(self, message:str) -> bool: 
+    def send_and_recive(self, message:str|None) -> bool: 
         """
         0 = all good;
         1 = error;
         2 = timeout
         """
-        #check weter the message contains '\n'
-        if not S.SPEED_MODE:
-            if list(message)[-1] != '\n':
-                raise FormatError("message: " + message + " is missing a '\n'")
+
+        if message is not None: # allow empty messages for only waiting for responce    
+            #check weter the message contains '\n'
+            if not S.SPEED_MODE:
+                if list(message)[-1] != '\n':
+                    raise FormatError("message: " + message + " is missing a '\n'")
+                
+            self.ser.write(message.encode("utf-8")) # send encoded byte message
             
-        self.ser.write(message.encode("utf-8")) # send encoded byte message
-        
         start_time = time.time()
 
         #wait for response
@@ -60,8 +62,8 @@ class Transmiter:
                     
                     else:
                         int_response = int(response)
-                        if not int_response == 0 or int_response == 1:
-                            raise ReturnError("response: '" + response + "' is not between 0 and 1 -> can't be converted to bool")
+                        if not int_response in [0, 1]:
+                            raise ReturnError("response: '" + str(int_response) + "' is not between 0 and 1 -> can't be converted to bool")
                         
                         else:
                             return bool(int_response)

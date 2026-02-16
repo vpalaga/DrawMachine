@@ -1,7 +1,5 @@
 from CDC_send import Transmiter
 import time
-from random_word import RandomWords
-r = RandomWords()
 
 # Return a single random word
 
@@ -9,10 +7,12 @@ transm = Transmiter()
 
 try:
     while True:
-        word = r.get_random_word()
-        responce = transm.send(word + "\n")
+        recive_responce = transm.send_and_recive("WAT 3" + "\n")
+        print("recive " + str(recive_responce))
 
-        print(responce, word)
-        time.sleep(.1)
+        finish_state = transm.send_and_recive(None)
+        print("finish " + str(finish_state))
+
+        time.sleep(1)
 finally:
     transm.__deinit__()

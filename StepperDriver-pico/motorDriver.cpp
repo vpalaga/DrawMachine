@@ -144,7 +144,9 @@ class Stepper{
 class Instructions{
 public:
     static bool wait(float seconds){
+        
         sleep_ms(seconds*1000); // make into seconds
+
         return false;
     }
 
@@ -156,61 +158,6 @@ public:
         return false; // move "DO"
     }
 };
-
-
-string instructionType;
-vector<float> instructionArgunments;
-
-void process_received(const string buf, int len) {
-    // return false (0): the message is OK 
-    // return true  (1): the message is unsable
-    // handle complete message (null-terminated)
-    
-
-    auto instructionDetails = get_instruction_details(buf);
-
-    instructionType         = instructionDetails.first;
-    instructionArgunments   = instructionDetails.second;
-    
-    // check instruction usability
-    
-    // state of recived message
-    bool recivedMessageState = false;
-
-    if (INSTRUCTION_SIZES.count(instructionType) == 0){ //check if instruction is valid, if 1=false, 0=true
-        recivedMessageState = true;
-    }    
-    if (INSTRUCTION_SIZES.at(instructionType) != len){ //check arguments size
-        recivedMessageState = true;
-    }
-
-    // send out the state of recived message
-    confirm_recive(recivedMessageState);
-    
-    if (recivedMessageState) return; // an error has happened
-
-    // paths to different instructions
-    bool instructionFinished;
-    
-    if          (instructionType=="MOV"){
-        // move
-        instructionFinished = Instructions::move(instructionArgunments[0], instructionArgunments[1]);
-    
-    } else if   (instructionType=="CLB"){
-        // calibrate
-        instructionFinished = Instructions::calibrate();
-
-    } else if   (instructionType=="WAT"){
-        // wait x seconds
-        instructionFinished = Instructions::wait(instructionArgunments[0]);
-    }
-
-    // send out if the instruction was run wihtout problems, false=good, true=unusable 
-    confirm_recive(instructionFinished);
-    
-
-
-}
 
 pair<string, vector<float>> get_instruction_details(string instruction){
 	// return string Instruction type, int* args4
@@ -265,6 +212,61 @@ void waitForCDC(){
     }
 }
 
+
+string instructionType;
+vector<float> instructionArgunments;
+
+void process_received(const string buf, int len) {
+    // return false (0): the message is OK 
+    // return true  (1): the message is unsable
+    // handle complete message (null-terminated)
+    
+
+    auto instructionDetails = get_instruction_details(buf);
+
+    instructionType         = instructionDetails.first;
+    instructionArgunments   = instructionDetails.second;
+    
+    // check instruction usability
+
+    LED led(1); // for testing, remove later
+    
+    // state of recived message
+    bool recivedMessageState = false;
+
+    if (INSTRUCTION_SIZES.count(instructionType) == 0){ //check if instruction is valid, if 1=false, 0=true
+        recivedMessageState = true;
+    }    
+    if (INSTRUCTION_SIZES.at(instructionType) != (instructionArgunments.size())){ //check arguments size
+        recivedMessageState = true;
+
+    }
+
+    // send out the state of recived message
+    confirm_recive(recivedMessageState);
+    
+
+    if (recivedMessageState) return; // an error has happened
+
+    // paths to different instructions
+    bool instructionFinished;
+    
+    if          (instructionType=="MOV"){
+        // move
+        instructionFinished = Instructions::move(instructionArgunments[0], instructionArgunments[1]);
+    
+    } else if   (instructionType=="CLB"){
+        // calibrate
+        instructionFinished = Instructions::calibrate();
+
+    } else if   (instructionType=="WAT"){
+        // wait x seconds
+        instructionFinished = Instructions::wait(instructionArgunments[0]);
+    }
+
+    // send out if the instruction was run wihtout problems, false=good, true=unusable 
+    confirm_recive(instructionFinished);
+}
 
 // main function:
 
