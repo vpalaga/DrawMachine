@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <map>
 
 using namespace std;
 
@@ -41,18 +42,15 @@ const int Y_STP_STEPPER_PIN = 19;
 const int LED_1_PIN = 16;
 const int LED_2_PIN = 17;
 
-// CDC buffer max len
-static const int BUF_MAX_LEN = 128;
+// CDC buffer max len, removed static 16,2,26
+const int BUF_MAX_LEN = 128;
 
-//=============================================================
-
-// stuff for CDC full string recive
-char rx_buf[BUF_MAX_LEN];
-int rx_pos = 0;
-
-// state of recived message
-bool recivedMessageState;
-
+// instruction type vs atguments
+const map<string, int> INSTRUCTION_SIZES = {
+    {"MOV", 2},
+    {"CLB", 0},
+    {"WAT", 1}
+};
 //=============================================================
 
 
@@ -74,11 +72,8 @@ class Swich{
             // check wheter they are pulling any current
             
             if (!gpio_get(pin)) {   // LOW = pressed
-                printf("Switch at %d pressed \n", pin);
                 return true;
-
             } else {
-                printf("Switch at %d released\n", pin);
                 return false;
             }
         }
@@ -138,7 +133,7 @@ class Stepper{
                 for (int i = 0; i < steps; i++) {
                     gpio_put(stepPin, 1);
                     sleep_us(us_delay);
-
+                
                     gpio_put(stepPin, 0);
                     sleep_us(us_delay);
                 }
@@ -146,19 +141,75 @@ class Stepper{
 
 };
 
-// wait for connection
-void waitForCDC(){
-    while (!stdio_usb_connected()) {
-        sleep_ms(100);
+class Instructions{
+public:
+    static bool wait(float seconds){
+        sleep_ms(seconds*1000); // make into seconds
+        return false;
     }
-}
 
-bool process_received(const char *buf, int len) {
+    static bool calibrate(){
+        return false; // calibrate "DO"
+    }
+
+    static bool move(float x, float y){
+        return false; // move "DO"
+    }
+};
+
+
+string instructionType;
+vector<float> instructionArgunments;
+
+void process_received(const string buf, int len) {
     // return false (0): the message is OK 
     // return true  (1): the message is unsable
     // handle complete message (null-terminated)
-    //printf("Got: %s\n", buf);
-    return false;
+    
+
+    auto instructionDetails = get_instruction_details(buf);
+
+    instructionType         = instructionDetails.first;
+    instructionArgunments   = instructionDetails.second;
+    
+    // check instruction usability
+    
+    // state of recived message
+    bool recivedMessageState = false;
+
+    if (INSTRUCTION_SIZES.count(instructionType) == 0){ //check if instruction is valid, if 1=false, 0=true
+        recivedMessageState = true;
+    }    
+    if (INSTRUCTION_SIZES.at(instructionType) != len){ //check arguments size
+        recivedMessageState = true;
+    }
+
+    // send out the state of recived message
+    confirm_recive(recivedMessageState);
+    
+    if (recivedMessageState) return; // an error has happened
+
+    // paths to different instructions
+    bool instructionFinished;
+    
+    if          (instructionType=="MOV"){
+        // move
+        instructionFinished = Instructions::move(instructionArgunments[0], instructionArgunments[1]);
+    
+    } else if   (instructionType=="CLB"){
+        // calibrate
+        instructionFinished = Instructions::calibrate();
+
+    } else if   (instructionType=="WAT"){
+        // wait x seconds
+        instructionFinished = Instructions::wait(instructionArgunments[0]);
+    }
+
+    // send out if the instruction was run wihtout problems, false=good, true=unusable 
+    confirm_recive(instructionFinished);
+    
+
+
 }
 
 pair<string, vector<float>> get_instruction_details(string instruction){
@@ -166,7 +217,7 @@ pair<string, vector<float>> get_instruction_details(string instruction){
 
 	istringstream iss(instruction);
 	vector<string> parts;
-	vector<float> arguments = {0.0f};// store
+	vector<float> arguments;// store
 	string part;
 
 	string instruction_type; // first object in parts
@@ -192,11 +243,61 @@ pair<string, vector<float>> get_instruction_details(string instruction){
 	return {instruction_type, arguments};
 }
 
+// stuff for CDC full string recive
+char rx_buf[BUF_MAX_LEN];
+int rx_pos = 0;
+int c;
 
+
+//=============================================================
+
+// send message to rsb, false=good, true=unusable
 void confirm_recive(bool state){
     // false = all good
     // true error
     printf("%d\n", state); // dont forget to end message by '\n'
+}
+
+// wait for connection
+void waitForCDC(){
+    while (!stdio_usb_connected()) {
+        sleep_ms(100);
+    }
+}
+
+
+// main function:
+
+void CDC_loop(){
+    // get full buffer
+    while (true) {
+        c = getchar_timeout_us(0);
+        
+        if (c == PICO_ERROR_TIMEOUT){ 
+            break; // no more data, or no data to start with
+        }
+        if (rx_pos < BUF_MAX_LEN - 1) {
+            rx_buf[rx_pos++] = (char)c;
+        }
+        // optional: detect end-of-line to process early, should allways be the case
+        if (c == '\n' || c == '\r') {
+            break;
+        }
+    }
+
+    // work with recived string
+    if (rx_pos > 0) {
+        rx_buf[rx_pos] = '\0';    // null terminate
+        
+        // convert char* to std::string
+        string message(rx_buf);
+
+        // save the state, false=good, true=unusable
+        process_received(message, rx_pos);
+        
+        // reset for next message
+        rx_pos = 0;
+    }
 }
 
 int main()
@@ -232,36 +333,10 @@ int main()
     //LED greenLed(14);
 
     //Steppers
-    Stepper xStepper(X_STP_STEPPER_PIN, X_DIR_STEPPER_PIN, 1000);
+    //Stepper xStepper(X_STP_STEPPER_PIN, X_DIR_STEPPER_PIN, 1000);
 
-    printf("USB CDC serial ready!\n");
-
-    while (true) {
-        // get full buffer
-        while (true) {
-            int c = getchar_timeout_us(0);
-            if (c == PICO_ERROR_TIMEOUT) break;     // no more data
-            if (rx_pos < BUF_MAX_LEN - 1) {
-                rx_buf[rx_pos++] = (char)c;
-            }
-            // optional: detect end-of-line to process early, should allways be the case
-            if (c == '\n' || c == '\r') {
-                break;
-            }
-        }
-
-        if (rx_pos > 0) {
-            rx_buf[rx_pos] = '\0';    // null terminate
-            
-            // save the state, false=good, true=unusable
-            recivedMessageState = process_received(rx_buf, rx_pos);
-            // send out the state
-            confirm_recive(recivedMessageState);
-            
-            // reset for next message
-            rx_pos = 0;
-        }
-
+    while (true) { // CDC loop
+        CDC_loop();
         sleep_ms(1); // bottle neck, ignore for now
     }
     
