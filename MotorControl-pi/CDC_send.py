@@ -31,7 +31,7 @@ class Transmiter:
 
         time.sleep(2)    # short delay to let the port settle
 
-    def send_and_recive(self, message:str|None) -> bool: 
+    def send_and_receive(self, message:str|None) -> bool: 
         """
         0 = all good;
         1 = error;
