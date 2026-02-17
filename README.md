@@ -117,6 +117,8 @@ finally:
 
 Stepps moves are computed by Bresenham move function
 
+![./images/Bresenham-style move function.png](https://github.com/vpalaga/DrawMachine/blob/master/images/Bresenham-style%20move%20function.png)
+
 ```cpp
 class StepperDriver{
 public:
