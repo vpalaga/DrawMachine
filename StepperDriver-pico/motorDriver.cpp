@@ -183,7 +183,7 @@ public:
         bool y_dir = (y<0) ? false : true;
 
         // set both to positive
-        abs(x); abs(y);
+        x = abs(x); y = abs(y);
 
         if (x >= y){ // x = lead
             bresenham(xStepperMotor, yStepperMotor, x, y, x_dir, y_dir);    
