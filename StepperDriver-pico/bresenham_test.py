@@ -1,10 +1,10 @@
 from PIL import Image, ImageDraw
 import random
 
-sqares = 20
+sqares = 800
 size = sqares//2
 
-pixels_p_sqare = 80
+pixels_p_sqare = 1
 BLACK = (0,0,0)
 WHITE = (255,255,255)
 
@@ -19,10 +19,10 @@ def grd():
     for x in range(sqares):
         drw.line([(x*pixels_p_sqare, 0),(x*pixels_p_sqare, w_h)], fill=(40,40,40),width=1)
 
-grd()
+#grd()
 
 def line(x1, y1, x2, y2):
-    drw.line([(x1,y1),(x2,y2)],fill=BLACK,width=10)
+    drw.line([(x1,y1),(x2,y2)],fill=BLACK,width=1)
 
     
 class Stepper:
@@ -51,7 +51,7 @@ class Stepper:
             self.y = new_y
         
         # make nice edges
-        drw.circle((self.x, self.y), 4, BLACK)
+        #drw.circle((self.x, self.y), 4, BLACK)
     
     def reset(self):
         self.x = w_h / 2
@@ -108,12 +108,12 @@ def abs_line(x, y):
 
 
 drv = Driver()
-for _ in range(1):
+for _ in range(10):
 
-    #mv_to = (random.randint(-size,size),random.randint(-size,size))
+    mv_to = (random.randint(-size,size),random.randint(-size,size))
 
-    mv_to = (9,7)
-    abs_line(*mv_to)
+    #mv_to = (9,7)
+    #abs_line(*mv_to)
     drv.move(*mv_to)
 
     drv.xyStepper.reset()

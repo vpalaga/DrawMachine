@@ -40,8 +40,9 @@ const int Y_DIR_STEPPER_PIN = 18;
 const int Y_STP_STEPPER_PIN = 19;
 
 // LEDs wire to GND (pin 23)
-const int LED_1_PIN = 16;
-const int LED_2_PIN = 17;
+const int LED_INSTRUCTION_PIN = 17;
+const int LED_2_PIN = 16;
+
 
 // CDC buffer max len, removed static 16,2,26
 const int BUF_MAX_LEN = 128;
@@ -191,25 +192,49 @@ public:
             bresenham(yStepperMotor, xStepperMotor, y, x, y_dir, x_dir);
         }
     }
-
 };
+
+// end swiches, use with calibrate
+Swich xSwich(X_SWICH_GPIO); // GPIo 26
+Swich ySwich(Y_SWICH_GPIO); // GPIO 27
+
+// instruction led, when doing instruction than, on
+LED instructionLed(LED_INSTRUCTION_PIN);
+
+// driver
+StepperDriver driver;
 
 class Instructions{
 public:
     static bool wait(float seconds){
-        
+        instructionLed.setState(true);
+
         sleep_ms(seconds*1000); // make into seconds
 
+        instructionLed.setState(false);
         return false;
     }
 
-    static bool calibrate(){
-        return false; // calibrate "DO"
+    static bool move(int x, int y){
+        instructionLed.setState(true);
+
+        driver.move(x, y);
+
+        instructionLed.setState(false);
+        return false; // move 
     }
 
-    static bool move(float x, float y){
-        return false; // move "DO"
+    static bool calibrate(){
+        instructionLed.setState(true);
+
+        while (!xSwich.getSwichState()){ // dosnt conduct
+            driver.move(1, 0); // move one step x
+        }
+
+        instructionLed.setState(false);
+        return false; // calibrate 
     }
+
 };
 
 pair<string, vector<float>> get_instruction_details(string instruction){
