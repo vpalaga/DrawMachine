@@ -113,7 +113,64 @@ finally:
     ser.close()
     exit()
 ```
+### Stepping
 
+Stepps moves are computed by Bresenham move function
+
+```cpp
+class StepperDriver{
+public:
+    Stepper xStepperMotor;
+    Stepper yStepperMotor;
+
+    StepperDriver()
+        : xStepperMotor(X_STP_STEPPER_PIN, X_DIR_STEPPER_PIN, 100),
+          yStepperMotor(Y_STP_STEPPER_PIN, Y_DIR_STEPPER_PIN, 100) {
+    }
+    void bresenham(Stepper leadStepper, Stepper followStepper, int lead, int follow, bool leadDir, bool followDir){
+        // how many steps of follow pro one step of lead
+        float bresenhamStep = (float)follow / lead; // needs to be <0 
+
+        int followPos   = 0;
+        int followCycle;
+        int diffFollowCycle;
+
+        for (int cycle = 1; cycle<lead+1; cycle++){ // cycle need to start at 1
+            
+            // calculate how many steps at current cycle position 
+            followCycle = round(cycle*bresenhamStep);
+            
+            // check how many are needed for this cycle
+            diffFollowCycle = followCycle - followPos;
+
+            // update the followPos to current follow position
+            followPos += diffFollowCycle;
+
+            //move the steppers accordingly
+            // step: bool: dir, int steps, microseconds_sleep
+            leadStepper.step(leadDir,1,100);
+            followStepper.step(followDir,diffFollowCycle,100); // move the follow if needed
+        }
+    }
+
+    void move(int x, int y){
+
+        bool x_dir = (x<0) ? false : true; // change if the direction is wrong
+        bool y_dir = (y<0) ? false : true;
+
+        // set both to positive
+        x = abs(x); y = abs(y);
+
+        if (x >= y){ // x = lead
+            bresenham(xStepperMotor, yStepperMotor, x, y, x_dir, y_dir);    
+        } else { // y = lead
+            bresenham(yStepperMotor, xStepperMotor, y, x, y_dir, x_dir);
+        }
+    }
+
+};
+
+```
 
 ---
 
