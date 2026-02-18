@@ -11,7 +11,7 @@ try:
     while True:
         start_time = time.time()
 
-        receive_response = transm.send_and_receive(inst[i])
+        receive_response = transm.send_and_receive(inst[1])
         print("recive " + str(receive_response))
 
         finish_state = transm.send_and_receive(None)

@@ -35,7 +35,6 @@ class FGenerator:
 
                 self.vis.move(x, y) # move to first segment pos
                 self.file.add_instruction(Instruction("MOV", x, y))
-
                 self.vis.pendown()
                 self.file.add_instruction(Instruction("PDN"))
 
