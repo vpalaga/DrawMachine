@@ -119,3 +119,4 @@ for _ in range(10):
     drv.xyStepper.reset()
 
 img.show()
+    

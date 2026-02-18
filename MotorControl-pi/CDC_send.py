@@ -2,6 +2,12 @@ import serial
 import time
 import settings as S
 
+def t():
+    """time """
+    return time.strftime("%H:%M:%S", 
+             time.gmtime(time()))
+
+
 class FormatError(Exception):
     def __init__(self, message):
         self.message = message

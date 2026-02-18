@@ -476,6 +476,7 @@ public:
         display.display_text("CALB");
 
         while (!xSwich.getSwichState()){ // dosnt conduct
+            // i dont think a sleep is needed here, since 900 steps = 1mm move, so should be more than enough time to stop
             stepper_driver.move(-1, 0); // move one step x back (-)
         }
 
@@ -555,8 +556,6 @@ void process_received(const string buf, int len) {
     instructionArgunments   = instructionDetails.second;
     
     // check instruction usability
-
-    LED led(1); // for testing, remove later
     
     // state of recived message
     bool recivedMessageState = false;

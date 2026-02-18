@@ -15,15 +15,11 @@ class StepperMotor:
 
         # add stuff to self.reset()
         self.pos_mm = 0. # float
-        self.rotation = 0. # float
-        self.pos_step = 0 # int
 
 
     def __values__(self):
         return {"NAME"    : self.name,
-                "pos_mm"  : self.pos_mm,
-                "rotation: ": self.rotation,
-                "pos_step: ": self.pos_step}
+                "pos_mm"  : self.pos_mm,}
 
     def check_pos(self, difference:float)->bool:
         """check positon [mm] = current pos [mm]+ difference [mm] """
@@ -35,6 +31,4 @@ class StepperMotor:
 
     def reset(self): # use with calibration
         self.pos_mm = 0.
-        self.rotation = 0.
-        self.pos_step = 0
 
