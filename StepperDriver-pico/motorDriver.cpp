@@ -61,7 +61,9 @@ const int BUF_MAX_LEN = 128;
 const map<string, int> INSTRUCTION_SIZES = {
     {"MOV", 2},
     {"CLB", 0},
-    {"WAT", 1}
+    {"WAT", 1},
+    {"PUP", 0},
+    {"PDN", 0}
 };
 //=============================================================
 
@@ -485,6 +487,27 @@ public:
         return false; // calibrate 
     }
 
+    static bool penUp(){
+        instructionLed.setState(true);
+        display.display_text("PNUP");
+
+
+
+        display.display_text("----");
+        instructionLed.setState(false);
+    }
+    
+    static bool penDown(){
+        instructionLed.setState(true);
+        display.display_text("PNDN");
+
+        
+
+        display.display_text("----");
+        instructionLed.setState(false);
+    }
+
+
 };
 
 pair<string, vector<float>> get_instruction_details(string instruction){
@@ -589,7 +612,16 @@ void process_received(const string buf, int len) {
     } else if   (instructionType=="WAT"){
         // wait x seconds
         instructionFinished = Instructions::wait(instructionArgunments[0]);
-    }
+
+    } else if (instructionType=="PUP"){
+
+        instructionFinished = Instructions::penUp();
+
+    } else if (instructionType=="PDN"){
+
+        instructionFinished = Instructions::penDown();
+    } 
+
 
     // send out if the instruction was run wihtout problems, false=good, true=unusable 
     confirm_recive(instructionFinished);
