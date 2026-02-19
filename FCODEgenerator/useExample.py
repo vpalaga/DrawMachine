@@ -1,7 +1,7 @@
-from FCODEgenerator.main import FGenerator
+from main import FGenerator
 
 # create a generatin object
-gen = FGenerator("train_v1.dxf", acc=.1, vis_scale=10, text=False)
+gen = FGenerator(r'C:\Users\vit\OneDrive\Documents\GitHub\DrawMachine\FCODEgenerator\simpleShape.dxf', acc=.1, vis_scale=10, text=False)
 
 # generate the FCODE from the provided dxf file
 gen.generate_instructions()

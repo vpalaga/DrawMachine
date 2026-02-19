@@ -198,6 +198,14 @@ class Reader:
         if e_type == "LINE":
             s_x, s_y = e.dxf.start[0], e.dxf.start[1]
             e_x, e_y = e.dxf.end[0],   e.dxf.end[1]
+            
+            print("raw")
+            print(s_x, s_y, e_x, e_y)
+
+            #shift x by -10??
+
+            s_x -= 10
+            e_x -= 10
 
             #print("start point: %s" % e.dxf.start)
             #print("end point: %s\n" % e.dxf.end)

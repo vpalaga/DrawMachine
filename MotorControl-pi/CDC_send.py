@@ -5,7 +5,7 @@ import settings as S
 def t():
     """time """
     return time.strftime("%H:%M:%S", 
-             time.gmtime(time()))
+             time.gmtime(time.time()))
 
 
 class FormatError(Exception):

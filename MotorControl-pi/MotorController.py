@@ -1,6 +1,6 @@
 from MotorOverclass import StepperMotor
 from CDC_send import Transmiter, t
-
+import settings
 
 class MotorOutOfRangeError(Exception):#
     def __init__(self, message):
@@ -16,17 +16,15 @@ class MotorController:
         "A4": (40, 40) # measure
     }
 
-    def __init__(self, name="motorController", move_format="A4"|tuple[float,float]):
+    def __init__(self, name="motorController", move_format="A4"):
         self.name = name
 
         # CDC send instruction object
         self.transmiter = Transmiter()
 
         #steppermotor objects to store the bullshit motor data
-        self.x_motor = StepperMotor(name="x_motor", max_pos_mm=270) # measure
+        self.x_motor = StepperMotor(name="x_motor", max_pos_mm=297) # measure
         self.y_motor = StepperMotor(name="y_motor", max_pos_mm=210) # measure
-
-        #self.servo
 
         # deal with starting offset (x, y)
         if move_format in MotorController.starting_offsets_user_presets.keys():# and type(move_format) == str:
@@ -43,7 +41,7 @@ class MotorController:
         """(target - current)(x, y)"""
         
         x_move = x_target - self.x_motor.pos_mm
-        y_move = y_target - self.y_motor.pos_mm0
+        y_move = y_target - self.y_motor.pos_mm
 
         self.mm_move(x=x_move,y=y_move)
 
@@ -75,7 +73,7 @@ class MotorController:
             y_steps = round(StepperMotor.STEPS_P_MM * (self.y_motor.pos_mm - y_motor_move_starting_mmpos)) # 10mm*1800steps = 18000 steps
 
         else:
-            raise MotorOutOfRangeError("position: motorY: "  + str(self.y_motor.pos_mm + x))
+            raise MotorOutOfRangeError("position: motorY: "  + str(self.y_motor.pos_mm + y))
 
         # x or y may be undefinned, but if they are, Motor error will be raised
         
@@ -83,18 +81,53 @@ class MotorController:
 
 
     def step_move(self, x:int, y:int)->None:
-        print(f"{t()}: requesting: Move")
-        ret_state = self.transmiter.send_and_receive("MOV " + str(x) + " " + str(y) + "\n")
+        print(f"{t()}: requesting: Move, steps: x: {x} y: {y}")
 
-        print(f"{t()}: Move ret: {ret_state}")
-        # do the low level stuff here
+        if not settings.TEST_MODE:
+
+            recive_state = self.transmiter.send_and_receive("MOV " + str(x) + " " + str(y) + "\n")
+            print(f"{t()}: Move: {recive_state=}")
+
+            finish_state = self.transmiter.send_and_receive(None) # wait for finish
+            print(f"{t()}: Move: {finish_state=}\n")
+
+
 
     def calibrate(self)->None:
         # send calibrate instruction
         print(f"{t()}: requesting: Calibrate")
-        ret_state = self.transmiter.send_and_receive("CLB\n")
-        print(f"{t()}: Calibrate ret: {ret_state}")
+
+        if not settings.TEST_MODE:
+            recive_state = self.transmiter.send_and_receive("CLB\n")
+            print(f"{t()}: Calibrate: {recive_state=}")
+
+            finish_state = self.transmiter.send_and_receive(None) # wait for finish
+            print(f"{t()}: Calibrate: {finish_state=}\n")
 
         # reset the motors
         self.x_motor.reset()
         self.y_motor.reset()
+
+        #reset the servo as well?
+
+    def penUp(self):
+
+        print(f"{t()}: requesting: penUp")
+        
+        if not settings.TEST_MODE:
+            recive_state = self.transmiter.send_and_receive("PUP\n")
+            print(f"{t()}: penUp: {recive_state=}")
+
+            finish_state = self.transmiter.send_and_receive(None) # wait for finish
+            print(f"{t()}: penUp: {finish_state=}\n")
+
+    def penDown(self):
+
+        print(f"{t()}: requesting: penDown")
+        
+        if not settings.TEST_MODE:
+            recive_state = self.transmiter.send_and_receive("PDN\n")    
+            print(f"{t()}: penDown ret: {recive_state=}")
+
+            finish_state = self.transmiter.send_and_receive(None) # wait for finish
+            print(f"{t()}: penDown: {finish_state=}\n")

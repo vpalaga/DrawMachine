@@ -4,7 +4,7 @@ import time
 
 transm = Transmiter()
 
-inst = ["WAT 1\n","MOV 1800 1800\n","CLB\n"]
+inst = ["WAT 1\n","MOV 1600 1600\n","CLB\n","PUP\n"]
 
 i = 0
 try:

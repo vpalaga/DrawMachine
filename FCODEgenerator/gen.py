@@ -2,7 +2,7 @@ from segmentFunctions import Instruction
 
 class FCODE:
     paper_sizes = {  # in mm
-        "A4": (300, 210)
+        "A4": (297, 210)
     }
     def __init__(self, size: tuple[float, float]|str, name:str):
 
@@ -20,7 +20,7 @@ class FCODE:
         }
 
         self.header["header_length"] = len(self.header.keys())
-        self.instructions = []
+        self.instructions:list[Instruction] = []
 
 
     def add_instruction(self, instruction: Instruction):

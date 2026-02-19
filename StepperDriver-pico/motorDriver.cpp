@@ -29,17 +29,21 @@ int64_t alarm_callback(alarm_id_t id, void *user_data) {
 const int X_SWICH_GPIO = 26; // pin 31
 const int Y_SWICH_GPIO = 27; // pin 32
 
+// display
+const int DISPLAY_CLK = 14;
+const int DISPLAY_DIN = 15;
+
 // define the TMC2209 pins 1
 const int X_DIR_STEPPER_PIN = 20;
 const int X_STP_STEPPER_PIN = 21;
-
 // TMC 2
 const int Y_DIR_STEPPER_PIN = 18;
 const int Y_STP_STEPPER_PIN = 19;
 
 // LEDs wire to GND (pin 23)
 const int LED_INSTRUCTION_PIN = 17;
-const int LED_2_PIN = 16;
+const int LED_SYSTEM = 25;
+const int LED_2_PIN = 16; // no use now
 
 // PCA9685 I2C0 and SDA, change maybe to consts later
 // I2C defines
@@ -66,7 +70,6 @@ const map<string, int> INSTRUCTION_SIZES = {
     {"PDN", 0}
 };
 //=============================================================
-
 
 class PCA9685{
 public:
@@ -322,28 +325,28 @@ class Swich{
 };
 
 class LED{
-    public:
-        uint pin;
-        bool state = false;
+public:
+    uint pin;
+    bool state = false;
 
-        LED(uint pin_init_){
-            pin = pin_init_;
-            
-            gpio_init(pin);             // initialize the GPIO pin
-            gpio_set_dir(pin, GPIO_OUT);// set it as output
-        }
+    LED(uint pin_init_){
+        pin = pin_init_;
+        
+        gpio_init(pin);             // initialize the GPIO pin
+        gpio_set_dir(pin, GPIO_OUT);// set it as output
+    }
 
-        void toggleLed(){
-            state = !state;
+    void toggleLed(){
+        state = !state;
 
-            gpio_put(pin, state);
-        }
+        gpio_put(pin, state);
+    }
 
-        void setState(bool set_to){
-            state = set_to;
+    void setState(bool set_to){
+        state = set_to;
 
-            gpio_put(pin, state);
-        }
+        gpio_put(pin, state);
+    }
 };
 
 class Stepper{
@@ -433,8 +436,8 @@ public:
     }
 };
 
-// display
-HW069 display(0,1);
+// display object
+HW069 display(DISPLAY_CLK, DISPLAY_DIN);
 
 // end swiches, use with calibrate
 Swich xSwich(X_SWICH_GPIO); // GPIo 26
@@ -447,7 +450,7 @@ LED instructionLed(LED_INSTRUCTION_PIN);
 StepperDriver stepper_driver;
 
 // servoDriver
-PCA9685 servoDriver;
+PCA9685 servoDriver;   
 
 class Instructions{
 public:
@@ -491,20 +494,22 @@ public:
         instructionLed.setState(true);
         display.display_text("PNUP");
 
-
+        servoDriver.set_servo_angle(0, 30); // set "DO"
 
         display.display_text("----");
         instructionLed.setState(false);
+        return false;
     }
     
     static bool penDown(){
         instructionLed.setState(true);
         display.display_text("PNDN");
 
-        
+        servoDriver.set_servo_angle(0, 0);
 
         display.display_text("----");
         instructionLed.setState(false);
+        return false;
     }
 
 
@@ -546,7 +551,6 @@ char rx_buf[BUF_MAX_LEN];
 int rx_pos = 0;
 int c;
 
-
 //=============================================================
 
 // send message to rsb, false=good, true=unusable
@@ -562,7 +566,6 @@ void waitForCDC(){
         sleep_ms(100);
     }
 }
-
 
 string instructionType;
 vector<float> instructionArgunments;
@@ -627,7 +630,7 @@ void process_received(const string buf, int len) {
     confirm_recive(instructionFinished);
 }
 
-// main function:
+// main functions:
 
 void CDC_loop(){
     // get full buffer
@@ -677,21 +680,10 @@ int main()
     // For more examples of clocks use see https://github.com/raspberrypi/pico-examples/tree/master/clocks
     }
 
-    //set up the x,y end swiches
-    //Swich xSwich(X_SWICH_GPIO); // GPIo 26
-    //Swich ySwich(Y_SWICH_GPIO); // GPIO 27
-    
-    // leds
-    //LED redLed(13);
-    //LED greenLed(14);
-
-    //Steppers
-    //Stepper xStepper(X_STP_STEPPER_PIN, X_DIR_STEPPER_PIN, 1000);
     display.display_text("----");
 
     while (true) { // CDC loop
         CDC_loop();
         sleep_ms(1); // bottle neck, ignore for now
-    }
-    
+    }   
 }

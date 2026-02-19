@@ -25,21 +25,21 @@ class FGenerator:
 
     def generate_instructions(self):
         for segments in self.instructions: #segments are colsed loops of lines 
-
             x, y = segments[0][0], segments[0][1]
-            
-            # move to next segment with lifting the nozzle
+
+            # move to next segment with lifting the nozzle, -> move from last segemt to current
             if not (x, y) == (self.vis.nozzle_x, self.vis.nozzle_y): 
                 self.vis.penup()
                 self.file.add_instruction(Instruction("PUP"))
 
                 self.vis.move(x, y) # move to first segment pos
                 self.file.add_instruction(Instruction("MOV", x, y))
+
                 self.vis.pendown()
                 self.file.add_instruction(Instruction("PDN"))
 
-            else: # the nozzle is already at the position -> no need for movement
-                pass
+            #else: # the nozzle is already at the position -> no need for movement
+            #    pass
 
             for segment in segments[1:]: # add each coordinate of the loop / segment
                 self.file.add_instruction(Instruction("MOV",  *segment))

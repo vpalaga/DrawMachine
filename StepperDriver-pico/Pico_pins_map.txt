@@ -2,7 +2,7 @@
                               _______
                         ______|     |______
                     GP0 | 1             40|VBUS
-                    GP1 | 2             39|VSYS
+                    GP1 | 2  GP25|LED   39|VSYS
                     GND | 3             38| GND      
                     GP2 | 4             37|3v3e     
                     GP3 | 5             36|3V3O     3V3 Source
