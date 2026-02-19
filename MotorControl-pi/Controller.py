@@ -12,12 +12,16 @@ class Controller():
         # skip header
         header_size:int = int(self.instructions[0].split(" ")[1]) # first line, second block after " ", convert to int 
         print(f"{header_size=}")
+        
+        instructions_len = len(self.instructions[header_size:])
+        instructions_len_string_len = len(str(instructions_len))
 
-        for line in self.instructions[header_size:]: # skip from after the header
+        for i, line in enumerate(self.instructions[header_size:]): # skip from after the header
             current_istruction:list[str] = line.split(" ")
             
             instruction_type:str = current_istruction[0]
-            
+            print(f"Instruction: {i:>{instructions_len_string_len}}/{instructions_len}")
+
             match instruction_type:
                 case "MOV":
                     # pass the x and y argument

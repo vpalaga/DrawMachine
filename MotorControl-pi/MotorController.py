@@ -81,7 +81,7 @@ class MotorController:
 
 
     def step_move(self, x:int, y:int)->None:
-        print(f"{t()}: requesting: Move, steps: x: {x} y: {y}")
+        print(f"{t()}: requesting: Move, steps: x: {x} y: {y} estimated time: {max(x, y)/5000}s")
 
         if not settings.TEST_MODE:
 
@@ -103,6 +103,9 @@ class MotorController:
 
             finish_state = self.transmiter.send_and_receive(None) # wait for finish
             print(f"{t()}: Calibrate: {finish_state=}\n")
+            
+            # move to starting ofset
+            self.move_to_mm(*MotorController.starting_offsets_user_presets["A4"])
 
         # reset the motors
         self.x_motor.reset()

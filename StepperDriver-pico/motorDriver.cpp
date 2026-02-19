@@ -39,6 +39,8 @@ const int X_STP_STEPPER_PIN = 21;
 // TMC 2
 const int Y_DIR_STEPPER_PIN = 18;
 const int Y_STP_STEPPER_PIN = 19;
+// us sleep between steps
+const int US_STEPPER_SLEEP = 110;
 
 // LEDs wire to GND (pin 23)
 const int LED_INSTRUCTION_PIN = 17;
@@ -415,8 +417,8 @@ public:
             followPos += diffFollowCycle;
 
             //move the steppers accordingly
-            leadStepper.step(leadDir,1,100);
-            followStepper.step(followDir,diffFollowCycle,100); // move the follow if needed
+            leadStepper.step(  leadDir,  1,              US_STEPPER_SLEEP);
+            followStepper.step(followDir,diffFollowCycle,US_STEPPER_SLEEP); // move the follow if needed
         }
     }
 
@@ -680,7 +682,7 @@ int main()
     // For more examples of clocks use see https://github.com/raspberrypi/pico-examples/tree/master/clocks
     }
 
-    display.display_text("----");
+    display.display_text("8-- ");
 
     while (true) { // CDC loop
         CDC_loop();

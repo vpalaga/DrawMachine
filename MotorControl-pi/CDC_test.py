@@ -4,7 +4,7 @@ import time
 
 transm = Transmiter()
 
-inst = ["WAT 1\n","MOV 1600 1600\n","CLB\n","PUP\n"]
+inst = ["WAT 1\n","MOV 5000 0\n","CLB\n","PUP\n"]
 
 i = 0
 try:
@@ -15,7 +15,7 @@ try:
         print("recive " + str(receive_response))
 
         finish_state = transm.send_and_receive(None)
-        print("finish " + str(finish_state) + " program time: " + str(round((time.time() - start_time)*1000, ndigits=5)) + " miliseconds")
+        print("finish " + str(finish_state) + " program time: " + str(round((time.time() - start_time), ndigits=5)) + " miliseconds")
 
         i += 1
         if i>len(inst)-1:

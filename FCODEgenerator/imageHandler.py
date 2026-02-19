@@ -57,7 +57,8 @@ class Visual:
 
         if self.pen_is_down:
             self.line((self.nozzle_x, self.nozzle_y),(x, y))
-
+        else:
+            self.line((self.nozzle_x, self.nozzle_y),(x, y), c=(255,0,0))
         self.nozzle_x, self.nozzle_y = x, y # update x,y nozzle pos
 
     def penup(self):
