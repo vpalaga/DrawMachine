@@ -13,6 +13,11 @@ class FormatError(Exception):
         self.message = message
         super().__init__(self.message)
 
+class TimeoutError(Exception):
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
+
 class ReturnError(Exception):
     def __init__(self, message):
         self.message = message
@@ -24,9 +29,7 @@ class ReturnError(Exception):
 class Transmiter:
     SERIAL_PORT = "COM14"
     BAUDRATE = 115200
-    RESPONSE_TIMEOUT_S = 30 # it can take long to travel long distance
-
-    CHECK_TIMEOUT_CYCLES = 100
+    RESPONSE_TIMEOUT_S = 100 # it can take long to travel long distance
 
     def __init__(self, port=SERIAL_PORT, baudrate=BAUDRATE):
         self.SERIAL_PORT = port
@@ -55,7 +58,6 @@ class Transmiter:
         start_time = time.time()
 
         #wait for response
-        cycle = 0
         while True:# wait for responce indefinetly add time out
             #either 0 or 1 or ""
             response = self.ser.readline().decode().strip()
@@ -76,16 +78,8 @@ class Transmiter:
                 
                 return bool(int(response))
             
-            if cycle >= Transmiter.CHECK_TIMEOUT_CYCLES:
-                current_time = time.time()
-                
-                if current_time - start_time <= Transmiter.RESPONSE_TIMEOUT_S:
-                    return 2 # timeout
+            if time.time() - start_time >= Transmiter.RESPONSE_TIMEOUT_S:
+                raise TimeoutError("responce not recived in last " + str(Transmiter.RESPONSE_TIMEOUT_S) + " s")
 
-                cycle = 0 # reset cycle 
-
-            time.sleep(S.TRANSMITER_RESPONSE_LOOP_WAIT) #bottleneck?
-            cycle += 1
-    
     def __deinit__(self):
         self.ser.close()

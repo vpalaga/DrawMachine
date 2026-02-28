@@ -118,7 +118,7 @@ class MotorController:
         print(f"{t()}: requesting: penUp")
         
         if not settings.TEST_MODE:
-            recive_state = self.transmiter.send_and_receive("PUP\n")
+            recive_state = self.transmiter.send_and_receive("SCA 0 30P\n")
             print(f"{t()}: penUp: {recive_state=}")
 
             finish_state = self.transmiter.send_and_receive(None) # wait for finish
@@ -129,7 +129,7 @@ class MotorController:
         print(f"{t()}: requesting: penDown")
         
         if not settings.TEST_MODE:
-            recive_state = self.transmiter.send_and_receive("PDN\n")    
+            recive_state = self.transmiter.send_and_receive("SCA 0 0\n")    
             print(f"{t()}: penDown ret: {recive_state=}")
 
             finish_state = self.transmiter.send_and_receive(None) # wait for finish

@@ -4,14 +4,18 @@ import time
 
 transm = Transmiter()
 
-inst = ["WAT 1\n","MOV 5000 0\n","CLB\n","PUP\n"]
+inst = ["WAT 1\n",
+        "MOV 5000 0\n",
+        "CLB\n",
+        "SCA 0 90\n",
+        "SCA 0 -90\n",]
 
-i = 0
+i = 3
 try:
     while True:
         start_time = time.time()
 
-        receive_response = transm.send_and_receive(inst[1])
+        receive_response = transm.send_and_receive(inst[i])
         print("recive " + str(receive_response))
 
         finish_state = transm.send_and_receive(None)
@@ -19,8 +23,8 @@ try:
 
         i += 1
         if i>len(inst)-1:
-            i=0
+            i=3
         
-        time.sleep(1)
+        time.sleep(2)
 finally:
     transm.__deinit__()
