@@ -26,24 +26,13 @@ int64_t alarm_callback(alarm_id_t id, void *user_data) {
 // end swich pins
 // deifne the GPIO ports of the draw swiches terminals
 // both thru swich to GND (pin 33, one above)
-const int X_SWICH_GPIO = 26; // pin 31
-const int Y_SWICH_GPIO = 27; // pin 32
 
-// display
-const int DISPLAY_CLK = 14;
-const int DISPLAY_DIN = 15;
 
-// define the TMC2209 pins 1
-const int X_DIR_STEPPER_PIN = 20;
-const int X_STP_STEPPER_PIN = 21;
-// TMC 2
-const int Y_DIR_STEPPER_PIN = 18;
-const int Y_STP_STEPPER_PIN = 19;
 // us sleep between steps
 const int US_STEPPER_SLEEP = 110;
 
 // LEDs wire to GND (pin 23)
-const int LED_INSTRUCTION_PIN = 17;
+const int LED_INSTRUCTION_PIN = 28;
 const int LED_SYSTEM = 25;
 const int LED_2_PIN = 16; // no use now
 
@@ -62,14 +51,14 @@ const int LED_2_PIN = 16; // no use now
 
 // CDC buffer max len, removed static date: 16.2.26
 const int BUF_MAX_LEN = 128;
+const int INSTRUCION_TIMEOUT_MS = 3000; 
 
 // instruction type vs arguments
 const map<string, int> INSTRUCTION_SIZES = {
-    {"MOV", 2},
-    {"CLB", 0},
-    {"WAT", 1},
-    {"PUP", 0},
-    {"PDN", 0}
+    {"MOV", 2},// xsteps ysteps
+    {"CLB", 0},// 
+    {"WAT", 1},// seconds
+    {"SCA", 2} // channel, angle
 };
 //=============================================================
 
@@ -345,9 +334,11 @@ public:
     }
 
     void setState(bool set_to){
-        state = set_to;
+        if (set_to != state){
+            state = set_to;
 
-        gpio_put(pin, state);
+            gpio_put(pin, state);
+        }
     }
 };
 
@@ -393,9 +384,10 @@ public:
     Stepper xStepperMotor;
     Stepper yStepperMotor;
 
-    StepperDriver()
-        : xStepperMotor(X_STP_STEPPER_PIN, X_DIR_STEPPER_PIN, 100),
-          yStepperMotor(Y_STP_STEPPER_PIN, Y_DIR_STEPPER_PIN, 100) {
+    StepperDriver(uint8_t x_stp,uint8_t x_dir,uint8_t y_stp,uint8_t y_dir)
+
+        : xStepperMotor(x_stp, x_dir, 100),
+          yStepperMotor(y_stp, y_dir, 100) {
     }
     void bresenham(Stepper leadStepper, Stepper followStepper, int lead, int follow, bool leadDir, bool followDir){
         // how many steps of follow pro one step of lead
@@ -424,6 +416,8 @@ public:
 
     void move(int x, int y){
 
+        if(x == 0 && y == 0){return;}
+
         bool x_dir = (x<0) ? false : true; // change if the direction is wrong
         bool y_dir = (y<0) ? false : true;
 
@@ -439,17 +433,26 @@ public:
 };
 
 // display object
-HW069 display(DISPLAY_CLK, DISPLAY_DIN);
+HW069 display(14, 15);
 
 // end swiches, use with calibrate
-Swich xSwich(X_SWICH_GPIO); // GPIo 26
-Swich ySwich(Y_SWICH_GPIO); // GPIO 27
+Swich xSwich(26); // GPIo 26
+Swich ySwich(27); // GPIO 27
+
+// manual control swiches
+Swich mSwich_XP(2);
+Swich mSwich_XM(3);
+Swich mSwich_YP(4);
+Swich mSwich_YM(5);
+
+Swich mSwich_B1(6);
+Swich mSwich_B2(7);
 
 // instruction led, when doing instruction than, on
-LED instructionLed(LED_INSTRUCTION_PIN);
+LED instructionLed(28);
 
-// driver
-StepperDriver stepper_driver;
+// driver: xstp xdir ystp ydir
+StepperDriver stepper_driver(21, 20, 19, 18);
 
 // servoDriver
 PCA9685 servoDriver;   
@@ -457,64 +460,51 @@ PCA9685 servoDriver;
 class Instructions{
 public:
     static bool wait(float seconds){
-        instructionLed.setState(true);
         display.display_text("WAIT");
 
         sleep_ms(seconds*1000); // make into seconds
 
         display.display_text("----");
-        instructionLed.setState(false);
         return false;
     }
 
     static bool move(int x, int y){
-        instructionLed.setState(true);
         display.display_text("MOVE");
 
         stepper_driver.move(x, y);
 
         display.display_text("----");
-        instructionLed.setState(false);
         return false; // move 
     }
 
     static bool calibrate(){
-        instructionLed.setState(true);
         display.display_text("CALB");
 
+        while ((!xSwich.getSwichState()) && (!ySwich.getSwichState())){ // dosnt conduct
+            // i dont think a sleep is needed here, since 900 steps = 1mm move, so should be more than enough time to stop
+            stepper_driver.move(-1, -1); // move one step x back (-)
+        }
         while (!xSwich.getSwichState()){ // dosnt conduct
             // i dont think a sleep is needed here, since 900 steps = 1mm move, so should be more than enough time to stop
             stepper_driver.move(-1, 0); // move one step x back (-)
         }
+        while (!ySwich.getSwichState()){ // dosnt conduct
+            // i dont think a sleep is needed here, since 900 steps = 1mm move, so should be more than enough time to stop
+            stepper_driver.move(0, -1); // move one step x back (-)
+        }
 
         display.display_text("----");
-        instructionLed.setState(false);
         return false; // calibrate 
     }
 
-    static bool penUp(){
-        instructionLed.setState(true);
-        display.display_text("PNUP");
+    static bool servo_angle(uint8_t channel, float angle){
+        display.display_text("SANG");
 
-        servoDriver.set_servo_angle(0, 30); // set "DO"
-
-        display.display_text("----");
-        instructionLed.setState(false);
-        return false;
-    }
-    
-    static bool penDown(){
-        instructionLed.setState(true);
-        display.display_text("PNDN");
-
-        servoDriver.set_servo_angle(0, 0);
+        servoDriver.set_servo_angle(channel,angle); // set "DO"
 
         display.display_text("----");
-        instructionLed.setState(false);
         return false;
     }
-
-
 };
 
 pair<string, vector<float>> get_instruction_details(string instruction){
@@ -618,23 +608,42 @@ void process_received(const string buf, int len) {
         // wait x seconds
         instructionFinished = Instructions::wait(instructionArgunments[0]);
 
-    } else if (instructionType=="PUP"){
-
-        instructionFinished = Instructions::penUp();
-
-    } else if (instructionType=="PDN"){
-
-        instructionFinished = Instructions::penDown();
-    } 
+    } else if (instructionType=="SCA"){
+        // channel, angle
+        instructionFinished = Instructions::servo_angle((uint8_t)instructionArgunments[0],instructionArgunments[1]);
+        ;
+    }
 
 
     // send out if the instruction was run wihtout problems, false=good, true=unusable 
     confirm_recive(instructionFinished);
 }
 
+void manual_instruction(){
+    int8_t x_move;
+    int8_t y_move;
+
+    if(mSwich_XP.getSwichState()){x_move++;}
+
+    if(mSwich_XM.getSwichState()){x_move--;}
+
+    if(mSwich_YP.getSwichState()){y_move++;}
+
+    if(mSwich_YM.getSwichState()){y_move--;}
+
+    // undefined
+    if(mSwich_B1.getSwichState()){;}
+    if(mSwich_B2.getSwichState()){;}
+
+    // move the motors if needed
+    stepper_driver.move(x_move, y_move);
+    
+    return;
+}
+
 // main functions:
 
-void CDC_loop(){
+bool CDC_loop(){
     // get full buffer
     while (true) {
         c = getchar_timeout_us(0);
@@ -663,8 +672,12 @@ void CDC_loop(){
         
         // reset for next message
         rx_pos = 0;
+        return true;
     }
+    return false;
 }
+
+int time_from_last_inst;
 
 int main()
 {
@@ -685,7 +698,18 @@ int main()
     display.display_text("8-- ");
 
     while (true) { // CDC loop
-        CDC_loop();
+        
+        if (CDC_loop()){time_from_last_inst=0;} else {time_from_last_inst++;}
+        
         sleep_ms(1); // bottle neck, ignore for now
+
+        if (time_from_last_inst > INSTRUCION_TIMEOUT_MS){
+            // enable manual control
+            instructionLed.setState(false);
+            manual_instruction();
+        }
+        
+        // reset instruction led after reciving an istructon
+        if (time_from_last_inst == 0){instructionLed.setState(true);}
     }   
 }
