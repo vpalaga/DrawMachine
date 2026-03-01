@@ -53,12 +53,15 @@ const int LED_2_PIN = 16; // no use now
 const int BUF_MAX_LEN = 128;
 const int INSTRUCION_TIMEOUT_MS = 3000; 
 
+uint8_t consoleEnabled = 2; // 2 for unassigned 1 true 0 false
+
 // instruction type vs arguments
 const map<string, int> INSTRUCTION_SIZES = {
     {"MOV", 2},// xsteps ysteps
     {"CLB", 0},// 
     {"WAT", 1},// seconds
-    {"SCA", 2} // channel, angle
+    {"SCA", 2}, // channel, angle
+    {"SCM", 1} // mode (0,1,2)
 };
 //=============================================================
 
@@ -450,6 +453,7 @@ Swich mSwich_B2(7);
 
 // instruction led, when doing instruction than, on
 LED instructionLed(28);
+LED ledConsoleMode(17);
 
 // driver: xstp xdir ystp ydir
 StepperDriver stepper_driver(21, 20, 19, 18);
@@ -503,6 +507,10 @@ public:
         servoDriver.set_servo_angle(channel,angle); // set "DO"
 
         display.display_text("----");
+        return false;
+    }
+    static bool set_instruction_mode(uint8_t mode){
+        consoleEnabled = mode;
         return false;
     }
 };
@@ -595,7 +603,7 @@ void process_received(const string buf, int len) {
     // paths to different instructions
     bool instructionFinished;
     
-
+    
     if          (instructionType=="MOV"){
     
         instructionFinished = Instructions::move(instructionArgunments[0], instructionArgunments[1]);
@@ -611,6 +619,10 @@ void process_received(const string buf, int len) {
     } else if (instructionType=="SCA"){
         // channel, angle
         instructionFinished = Instructions::servo_angle((uint8_t)instructionArgunments[0],instructionArgunments[1]);
+        ;
+    } else if (instructionType=="SCM"){
+        // mode
+        instructionFinished = Instructions::set_instruction_mode((uint8_t)instructionArgunments[0]);
         ;
     }
 
@@ -666,16 +678,15 @@ bool CDC_loop(){
         
         // convert char* to std::string
         string message(rx_buf);
-
-        // save the state, false=good, true=unusable
         process_received(message, rx_pos);
-        
+
         // reset for next message
         rx_pos = 0;
         return true;
     }
     return false;
 }
+
 
 int time_from_last_inst;
 
@@ -711,5 +722,6 @@ int main()
         
         // reset instruction led after reciving an istructon
         if (time_from_last_inst == 0){instructionLed.setState(true);}
+        if (consoleEnabled != ledConsoleMode.state && consoleEnabled != 2)   {ledConsoleMode.setState(consoleEnabled);}
     }   
 }
