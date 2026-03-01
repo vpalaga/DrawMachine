@@ -2,7 +2,7 @@ from CDC_send import Transmiter
 import time
 import time
 
-transm = Transmiter(console=False)
+transm = Transmiter(console=True)
 
 inst = ["WAT 1\n",
         "MOV 10000 3000\n",
@@ -12,6 +12,7 @@ inst = ["WAT 1\n",
 
 i = 3
 try:
+    transm.console()
     while True:
         start_time = time.time()
 

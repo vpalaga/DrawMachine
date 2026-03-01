@@ -60,7 +60,7 @@ const int SLOWEST_STEPPER_uS = 400;
 uint8_t consoleEnabled = 2; // 2 for unassigned 1 true 0 false
 
 const int STEPS_P_1MM = STEPS_P_ROT / ROD_PICH_mm;
-const double MM_p_STEP = 1 / STEPS_P_1MM;
+const double MM_p_STEP = (double)1 / STEPS_P_1MM;
 
 // instruction type vs arguments
 const map<string, int> INSTRUCTION_SIZES = {
@@ -394,7 +394,7 @@ public:
     Stepper xStepperMotor;
     Stepper yStepperMotor;
 
-    int x_pos, y_pos;
+    int x_pos = 0;int y_pos = 0;
 
     StepperDriver(uint8_t x_stp,uint8_t x_dir,uint8_t y_stp,uint8_t y_dir)
 
@@ -432,20 +432,22 @@ public:
             // update the followPos to current follow position
             followPos += diffFollowCycle;
             
-            double prc = (cycle - 1) * procent_scaler;
-            if(consoleEnabled){printf("prc: %d\n",procent_scaler);}
-
-            sleep_us_profile = speed_profile(prc);
-            if (consoleEnabled){printf("%d\n",sleep_us_profile);}
+            // cycle starts from 1, but this fixes when moving lead=1, than the step is at lowest speed, this way it is at 100%
+            sleep_us_profile = speed_profile((cycle) * procent_scaler);
             //move the steppers accordingly
             leadStepper.step(  leadDir,  1,              sleep_us_profile);
             followStepper.step(followDir,diffFollowCycle,sleep_us_profile); // move the follow if needed
         }
+        return;
     }
 
     void move(int x, int y){
 
         if(x == 0 && y == 0){return;}
+
+        // update stepper pos
+        x_pos += x; 
+        y_pos += y;
 
         bool x_dir = (x<0) ? false : true; // change if the direction is wrong
         bool y_dir = (y<0) ? false : true;
@@ -458,9 +460,7 @@ public:
         } else {
             bresenham(yStepperMotor, xStepperMotor, y, x, y_dir, x_dir);
         }
-
-        // update stepper pos
-        x_pos += x; y_pos += y;
+        return;
     }
 
     void pos_reset(){
@@ -492,6 +492,7 @@ Swich mSwich_B2(7);
 // instruction led, when doing instruction than, on
 LED instructionLed(28);
 LED ledConsoleMode(17);
+LED onLed(16);
 
 // driver: xstp xdir ystp ydir
 StepperDriver stepper_driver(21, 20, 19, 18);
@@ -673,8 +674,8 @@ void process_received(const string buf, int len) {
 }
 
 void manual_instruction(){
-    int8_t x_move;
-    int8_t y_move;
+    int8_t x_move = 0;
+    int8_t y_move = 0;
 
     if(mSwich_XP.getSwichState()){x_move++;}
 
@@ -688,17 +689,19 @@ void manual_instruction(){
     if(mSwich_B1.getSwichState()){ // print head position
         if (consoleEnabled == 1){
             auto[x,y] = stepper_driver.stepper_pos();
-            printf("head pos: X: %d, Y:%d \n", round(x * MM_p_STEP * 10000)/10000, y * MM_p_STEP * 10000)/10000; // round up to 4 digets -> r(10**4)/10**4
+            printf("head pos: X: %.4fmm, Y: %.4fmm \n", (x * MM_p_STEP), (y * MM_p_STEP)); // round up to 4 digets -> r(10**4)/10**4
 
             sleep_ms(700);
-            
         }
     }
+
     if(mSwich_B2.getSwichState()){;}
 
     // move the motors if needed
-    stepper_driver.move(x_move, y_move);
-    
+    if (x_move != 0 || y_move != 0){
+        stepper_driver.move(x_move, y_move);
+    }
+
     return;
 }
 
@@ -754,7 +757,8 @@ int main()
     printf("USB Clock Frequency is %d Hz\n", clock_get_hz(clk_usb));
     // For more examples of clocks use see https://github.com/raspberrypi/pico-examples/tree/master/clocks
     }
-
+    
+    onLed.setState(true);
     display.display_text("8-- ");
 
     while (true) { // CDC loop
