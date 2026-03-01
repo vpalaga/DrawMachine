@@ -47,8 +47,11 @@ class Transmiter:
 
         time.sleep(1)    # short delay to let the port settle
 
-        pico_ret = self.send_and_receive("SCM " + str(int(console)) + '\n')
-        print(f"pico consoleMode: {console}, returned: {pico_ret}")
+        pico_recive = self.send_and_receive("SCM " + str(int(console)) + '\n')
+        print(f"pico consoleMode: {console}, returned: {pico_recive}")
+
+        pico_finish = self.send_and_receive(None)
+        print(f"pico consoleMode: {console}, finished: {pico_finish}")
 
     def send_and_receive(self, message:str|None) -> bool: 
         """

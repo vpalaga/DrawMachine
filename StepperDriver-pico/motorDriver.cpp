@@ -42,6 +42,8 @@ const int ROD_PICH_mm = 2;
 // speed profile vals
 const int FASTEST_STEPPER_US = 110;
 const int SLOWEST_STEPPER_uS = 400;
+
+const int USE_SPROFILE_FROM_STEPS = 200;
 // PCA9685 I2C0 and SDA, change maybe to consts later
 // I2C defines
 // This example will use I2C0 on GPIO8 (SDA) and GPIO9 (SCL) running at 400KHz.
@@ -418,6 +420,9 @@ public:
         int followCycle;
         int diffFollowCycle;
         double sleep_us_profile;
+        bool useSpeedProfile = true;
+        
+        if (lead<USE_SPROFILE_FROM_STEPS){useSpeedProfile = false;}
 
         double procent_scaler = (double)1 / lead;
 
@@ -432,8 +437,8 @@ public:
             // update the followPos to current follow position
             followPos += diffFollowCycle;
             
-            // cycle starts from 1, but this fixes when moving lead=1, than the step is at lowest speed, this way it is at 100%
-            sleep_us_profile = speed_profile((cycle) * procent_scaler);
+            // use profile only if the distance is greater than x steps
+            sleep_us_profile = (useSpeedProfile) ? speed_profile((cycle) * procent_scaler) : FASTEST_STEPPER_US;
             //move the steppers accordingly
             leadStepper.step(  leadDir,  1,              sleep_us_profile);
             followStepper.step(followDir,diffFollowCycle,sleep_us_profile); // move the follow if needed
