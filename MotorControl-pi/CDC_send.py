@@ -23,6 +23,11 @@ class ReturnError(Exception):
         self.message = message
         super().__init__(self.message)
 
+class ConsoleError(Exception):
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
+
 # replace with your Pico’s serial port name;
 # on Linux it might be "/dev/ttyACM0" or similar
 # on Windows something like "COM3"
@@ -31,14 +36,19 @@ class Transmiter:
     BAUDRATE = 115200
     RESPONSE_TIMEOUT_S = 100 # it can take long to travel long distance
 
-    def __init__(self, port=SERIAL_PORT, baudrate=BAUDRATE):
+    def __init__(self, console:bool, port=SERIAL_PORT, baudrate=BAUDRATE):
         self.SERIAL_PORT = port
         self.BAUDRATE = baudrate
+
+        self.console_mode = console
 
         # open the serial connection
         self.ser = serial.Serial(self.SERIAL_PORT, self.BAUDRATE, timeout=1)
 
-        time.sleep(2)    # short delay to let the port settle
+        time.sleep(1)    # short delay to let the port settle
+
+        pico_ret = self.send_and_receive("SCM " + str(int(console)) + '\n')
+        print(f"pico consoleMode: {console}, returned: {pico_ret}")
 
     def send_and_receive(self, message:str|None) -> bool: 
         """
@@ -80,6 +90,19 @@ class Transmiter:
             
             if time.time() - start_time >= Transmiter.RESPONSE_TIMEOUT_S:
                 raise TimeoutError("responce not recived in last " + str(Transmiter.RESPONSE_TIMEOUT_S) + " s")
+    
+    
+    def console(self):
+        """stream of returned values"""
+
+        if not self.console_mode:
+            raise ConsoleError("pico isnt in console Mode")
+        
+        print("Pico Console: ")
+        while True:
+            pico_ret = self.send_and_receive(None) 
+            print(str(t()) + ": " + str(pico_ret))
+
 
     def __deinit__(self):
         self.ser.close()
