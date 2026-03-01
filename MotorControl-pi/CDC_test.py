@@ -7,7 +7,7 @@ transm = Transmiter(console=True)
 inst = ["WAT 1\n",
         "MOV 5000 0\n",
         "CLB\n",
-        "SCA 0 90\n",
+        "SCA 0 90\n",   
         "SCA 0 -90\n",]
 
 i = 3

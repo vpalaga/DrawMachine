@@ -20,7 +20,7 @@ class MotorController:
         self.name = name
 
         # CDC send instruction object
-        self.transmiter = Transmiter()
+        self.transmiter = Transmiter(False)
 
         #steppermotor objects to store the bullshit motor data
         self.x_motor = StepperMotor(name="x_motor", max_pos_mm=297) # measure

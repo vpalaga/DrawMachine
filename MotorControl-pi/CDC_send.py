@@ -73,6 +73,9 @@ class Transmiter:
             response = self.ser.readline().decode().strip()
             
             if response != "": # resturn pth 1, 0, string
+                
+                if self.console_mode:
+                    return response
 
                 if not S.SPEED_MODE: # check weter the response can be converted to a bool
                     if not response.isdigit():

@@ -53,7 +53,13 @@ const int LED_2_PIN = 16; // no use now
 const int BUF_MAX_LEN = 128;
 const int INSTRUCION_TIMEOUT_MS = 3000; 
 
+const int STEPS_P_ROT = 1000;
+const int ROD_PICH_mm = 2;
+
 uint8_t consoleEnabled = 2; // 2 for unassigned 1 true 0 false
+
+const int STEPS_P_1MM = STEPS_P_ROT / ROD_PICH_mm;
+const double MM_p_STEP = 1 / STEPS_P_1MM;
 
 // instruction type vs arguments
 const map<string, int> INSTRUCTION_SIZES = {
@@ -387,6 +393,8 @@ public:
     Stepper xStepperMotor;
     Stepper yStepperMotor;
 
+    int x_pos, y_pos;
+
     StepperDriver(uint8_t x_stp,uint8_t x_dir,uint8_t y_stp,uint8_t y_dir)
 
         : xStepperMotor(x_stp, x_dir, 100),
@@ -432,6 +440,18 @@ public:
         } else {
             bresenham(yStepperMotor, xStepperMotor, y, x, y_dir, x_dir);
         }
+
+        // update stepper pos
+        x_pos += x; y_pos += y;
+    }
+
+    void pos_reset(){
+        x_pos = y_pos = 0;
+    }
+
+    pair<int,int> stepper_pos(){
+        pair<int,int> pos = make_pair(x_pos,y_pos);
+        return pos;
     }
 };
 
@@ -496,6 +516,9 @@ public:
             // i dont think a sleep is needed here, since 900 steps = 1mm move, so should be more than enough time to stop
             stepper_driver.move(0, -1); // move one step x back (-)
         }
+
+        // reset stepper pos
+        stepper_driver.pos_reset();
 
         display.display_text("----");
         return false; // calibrate 
@@ -644,7 +667,15 @@ void manual_instruction(){
     if(mSwich_YM.getSwichState()){y_move--;}
 
     // undefined
-    if(mSwich_B1.getSwichState()){;}
+    if(mSwich_B1.getSwichState()){ // print head position
+        if (consoleEnabled == 1){
+            auto[x,y] = stepper_driver.stepper_pos();
+            printf("head pos: X: %d, Y:%d \n", round(x * MM_p_STEP * 10000)/10000, y * MM_p_STEP * 10000)/10000; // round up to 4 digets -> r(10**4)/10**4
+
+            sleep_ms(700);
+            
+        }
+    }
     if(mSwich_B2.getSwichState()){;}
 
     // move the motors if needed
