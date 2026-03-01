@@ -29,13 +29,19 @@ int64_t alarm_callback(alarm_id_t id, void *user_data) {
 
 
 // us sleep between steps
-const int US_STEPPER_SLEEP = 110;
 
 // LEDs wire to GND (pin 23)
-const int LED_INSTRUCTION_PIN = 28;
 const int LED_SYSTEM = 25;
-const int LED_2_PIN = 16; // no use now
 
+const int BUF_MAX_LEN = 128;
+const int INSTRUCION_TIMEOUT_MS = 3000; 
+
+const int STEPS_P_ROT = 1000;
+const int ROD_PICH_mm = 2;
+
+// speed profile vals
+const int FASTEST_STEPPER_US = 110;
+const int SLOWEST_STEPPER_uS = 400;
 // PCA9685 I2C0 and SDA, change maybe to consts later
 // I2C defines
 // This example will use I2C0 on GPIO8 (SDA) and GPIO9 (SCL) running at 400KHz.
@@ -50,11 +56,6 @@ const int LED_2_PIN = 16; // no use now
 #define LED0_ON_L 0x06
 
 // CDC buffer max len, removed static date: 16.2.26
-const int BUF_MAX_LEN = 128;
-const int INSTRUCION_TIMEOUT_MS = 3000; 
-
-const int STEPS_P_ROT = 1000;
-const int ROD_PICH_mm = 2;
 
 uint8_t consoleEnabled = 2; // 2 for unassigned 1 true 0 false
 
@@ -400,6 +401,15 @@ public:
         : xStepperMotor(x_stp, x_dir, 100),
           yStepperMotor(y_stp, y_dir, 100) {
     }
+    double speed_profile(double val){
+        double ret = (SLOWEST_STEPPER_uS * (1 - sin(val * 3.14159)));
+
+        // cut off
+        if (ret<FASTEST_STEPPER_US){return FASTEST_STEPPER_US;}
+
+        return ret;
+    }
+
     void bresenham(Stepper leadStepper, Stepper followStepper, int lead, int follow, bool leadDir, bool followDir){
         // how many steps of follow pro one step of lead
         float bresenhamStep = (float)follow / lead; // needs to be <0 
@@ -407,6 +417,9 @@ public:
         int followPos   = 0;
         int followCycle;
         int diffFollowCycle;
+        double sleep_us_profile;
+
+        double procent_scaler = (double)1 / lead;
 
         for (int cycle = 1; cycle<lead+1; cycle++){ // cycle need to start at 1
             
@@ -418,10 +431,15 @@ public:
 
             // update the followPos to current follow position
             followPos += diffFollowCycle;
+            
+            double prc = (cycle - 1) * procent_scaler;
+            if(consoleEnabled){printf("prc: %d\n",procent_scaler);}
 
+            sleep_us_profile = speed_profile(prc);
+            if (consoleEnabled){printf("%d\n",sleep_us_profile);}
             //move the steppers accordingly
-            leadStepper.step(  leadDir,  1,              US_STEPPER_SLEEP);
-            followStepper.step(followDir,diffFollowCycle,US_STEPPER_SLEEP); // move the follow if needed
+            leadStepper.step(  leadDir,  1,              sleep_us_profile);
+            followStepper.step(followDir,diffFollowCycle,sleep_us_profile); // move the follow if needed
         }
     }
 
