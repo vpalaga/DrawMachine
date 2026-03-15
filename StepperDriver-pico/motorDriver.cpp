@@ -487,8 +487,8 @@ Swich ySwich(27); // GPIO 27
 
 // manual control swiches
 Swich mSwich_XP(2);
-Swich mSwich_XM(3);
-Swich mSwich_YP(4);
+Swich mSwich_XM(4);
+Swich mSwich_YP(3);
 Swich mSwich_YM(5);
 
 Swich mSwich_B1(6);

@@ -10,10 +10,21 @@ inst = ["WAT 1\n",
         "SCA 0 90\n",   
         "SCA 0 -90\n",]
 
+time.sleep(1)
+receive_response = transm.send_and_receive("CLB\n")
+print("recive " + str(receive_response))
+
+if True:
+    finish_state = transm.send_and_receive(None)
+    print("finish " + str(finish_state))
+
+time.sleep(1)
+transm.console()
+
 i = 3
 try:
-    transm.console()
-    while True:
+    
+    while False:
         start_time = time.time()
 
         receive_response = transm.send_and_receive(inst[1])

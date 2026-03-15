@@ -32,3 +32,5 @@ class Controller():
                     self.motor_driver.penUp()
                 case "PDN": 
                     self.motor_driver.penDown()
+                case "WAT":
+                    self.motor_driver.wa

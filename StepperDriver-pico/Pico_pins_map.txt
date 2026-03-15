@@ -5,19 +5,19 @@
                     GP1 | 2  GP25|LED   39|VSYS
                     GND | 3             38| GND      
 Swich control X+    GP2 | 4             37|3v3e     
-Swich control X-    GP3 | 5             36|3V3O     3V3 Source
-Swich control Y+    GP4 | 6             35|
+Swich control Y+    GP3 | 5             36|3V3O     3V3 Source
+Swich control X-    GP4 | 6             35|
 Swich control Y-    GP5 | 7             34|GP28     LED instruction
-Swich control GND   GND | 8             33| GND     Swich DRAIN
-Swich B1            GP6 | 9             32|GP27     Swich Y pull
-Swich B2            GP7 |10             31|GP26     Swich X pull
+                    GND | 8             33| GND     Swich DRAIN
+Swich B1            GP6 | 9             32|GP27     Swich X pull
+Swich B2            GP7 |10             31|GP26     Swich Y pull
 PCA9685 I2C_SDA     GP8 |11             30|RUN
 PCA9685 I2C_SCL     GP9 |12             29|GP22
 PCA9685 GND         GND |13             28| GND     TMC enable
-                    GP10|14             27|GP21     TMC X step
-                    GP11|15             26|GP20     TMC X dir
-                    GP12|16             25|GP19     TMC Y step
-                    GP13|17             24|GP18     TMC Y dir
+                    GP10|14             27|GP21     TMC Y step
+                    GP11|15             26|GP20     TMC Y dir
+                    GP12|16             25|GP19     TMC X step
+                    GP13|17             24|GP18     TMC X dir
                     GND |18             23| GND     TMC GND
 HW069 display CLK   GP14|19             22|GP17     LED consolemode (blue)
 HW069 display DIO   GP15|20             21|GP16     LED 2 (no use now)

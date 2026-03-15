@@ -34,7 +34,7 @@ class ConsoleError(Exception):
 class Transmiter:
     SERIAL_PORT = "COM14"
     BAUDRATE = 115200
-    RESPONSE_TIMEOUT_S = 100 # it can take long to travel long distance
+    RESPONSE_TIMEOUT_S = 200 # it can take long to travel long distance
 
     def __init__(self, console:bool, port=SERIAL_PORT, baudrate=BAUDRATE):
         self.SERIAL_PORT = port

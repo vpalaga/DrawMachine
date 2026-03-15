@@ -13,7 +13,7 @@ class MotorController:
        and move servos
     """
     starting_offsets_user_presets = { # in mm from left bottom corner
-        "A4": (40, 40) # measure
+        "A4": (25, 37) # measure
     }
 
     def __init__(self, name="motorController", move_format="A4"):
@@ -134,3 +134,12 @@ class MotorController:
 
             finish_state = self.transmiter.send_and_receive(None) # wait for finish
             print(f"{t()}: penDown: {finish_state=}\n")
+    def wait(self, secs):
+        print(f"{t()}: requesting: wait")
+        
+        recive_state = self.transmiter.send_and_receive("WAT " + secs + "\n")    
+        print(f"{t()}: wait ret: {recive_state=}")
+
+        finish_state = self.transmiter.send_and_receive(None) # wait for finish
+        print(f"{t()}: wait: {finish_state=}\n")
+            
