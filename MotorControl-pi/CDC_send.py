@@ -1,6 +1,6 @@
 import serial
 import time
-import settings as S
+import settings as s
 
 def t():
     """time """
@@ -13,7 +13,7 @@ class FormatError(Exception):
         self.message = message
         super().__init__(self.message)
 
-class TimeoutError(Exception):
+class PicoTimeoutError(Exception):
     def __init__(self, message):
         self.message = message
         super().__init__(self.message)
@@ -31,10 +31,10 @@ class ConsoleError(Exception):
 # replace with your Pico’s serial port name;
 # on Linux it might be "/dev/ttyACM0" or similar
 # on Windows something like "COM3"
-class Transmiter:
-    SERIAL_PORT = "COM14"
+class Transmitter:
+    SERIAL_PORT = "COM5"
     BAUDRATE = 115200
-    RESPONSE_TIMEOUT_S = 200 # it can take long to travel long distance
+    RESPONSE_TIMEOUT_S = 200 # it can take a long time to travel long distance
 
     def __init__(self, console:bool, port=SERIAL_PORT, baudrate=BAUDRATE):
         self.SERIAL_PORT = port
@@ -47,22 +47,22 @@ class Transmiter:
 
         time.sleep(1)    # short delay to let the port settle
 
-        pico_recive = self.send_and_receive("SCM " + str(int(console)) + '\n')
-        print(f"pico consoleMode: {console}, returned: {pico_recive}")
+        pico_receive = self.send_and_receive("SCM " + str(int(console)) + '\n')
+        print(f"pico consoleMode: {console}, returned: {pico_receive}")
 
         pico_finish = self.send_and_receive(None)
         print(f"pico consoleMode: {console}, finished: {pico_finish}")
 
-    def send_and_receive(self, message:str|None) -> bool: 
+    def send_and_receive(self, message:str|None) -> bool|str: 
         """
         0 = all good;
         1 = error;
         2 = timeout
         """
 
-        if message is not None: # allow empty messages for only waiting for responce    
-            #check weter the message contains '\n'
-            if not S.SPEED_MODE:
+        if message is not None: # allow empty messages for only waiting for response
+            #check whether the message contains '\n'
+            if not s.SPEED_MODE:
                 if list(message)[-1] != '\n':
                     raise FormatError("message: " + message + " is missing a '\n'")
                 
@@ -71,16 +71,16 @@ class Transmiter:
         start_time = time.time()
 
         #wait for response
-        while True:# wait for responce indefinetly add time out
+        while True:# wait for response indefinitely add time out
             #either 0 or 1 or ""
             response = self.ser.readline().decode().strip()
             
-            if response != "": # resturn pth 1, 0, string
+            if response != "": # return pth 1, 0, string
                 
                 if self.console_mode:
                     return response
 
-                if not S.SPEED_MODE: # check weter the response can be converted to a bool
+                if not s.SPEED_MODE: # check whether the response can be converted to a bool
                     if not response.isdigit():
                         raise ReturnError("response: '" + response + "' is not a integer")
                     
@@ -94,15 +94,15 @@ class Transmiter:
                 
                 return bool(int(response))
             
-            if time.time() - start_time >= Transmiter.RESPONSE_TIMEOUT_S:
-                raise TimeoutError("responce not recived in last " + str(Transmiter.RESPONSE_TIMEOUT_S) + " s")
+            if time.time() - start_time >= Transmitter.RESPONSE_TIMEOUT_S:
+                raise PicoTimeoutError("response not received in last " + str(Transmitter.RESPONSE_TIMEOUT_S) + " s")
     
     
     def console(self):
         """stream of returned values"""
 
         if not self.console_mode:
-            raise ConsoleError("pico isnt in console Mode")
+            raise ConsoleError("pico isn't in console Mode")
         
         print("Pico Console: ")
         while True:

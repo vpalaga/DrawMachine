@@ -454,8 +454,8 @@ public:
         x_pos += x; 
         y_pos += y;
 
-        bool x_dir = (x<0) ? false : true; // change if the direction is wrong
-        bool y_dir = (y<0) ? false : true;
+        bool x_dir = (x<0) ? true : false; // change if the direction is wrong
+        bool y_dir = (y<0) ? true : false;
 
         // set both to positive
         x = abs(x); y = abs(y);
@@ -482,8 +482,8 @@ public:
 HW069 display(14, 15);
 
 // end swiches, use with calibrate
-Swich xSwich(26); // GPIo 26
-Swich ySwich(27); // GPIO 27
+Swich xSwich(27); // GPIo 26
+Swich ySwich(26); // GPIO 27
 
 // manual control swiches
 Swich mSwich_XP(2);
@@ -758,8 +758,8 @@ int main()
     add_alarm_in_ms(2000, alarm_callback, NULL, false);
     // For more examples of timer use see https://github.com/raspberrypi/pico-examples/tree/master/timer
 
-    printf("System Clock Frequency is %d Hz\n", clock_get_hz(clk_sys));
-    printf("USB Clock Frequency is %d Hz\n", clock_get_hz(clk_usb));
+    //printf("System Clock Frequency is %d Hz\n", clock_get_hz(clk_sys));
+    //printf("USB Clock Frequency is %d Hz\n", clock_get_hz(clk_usb));
     // For more examples of clocks use see https://github.com/raspberrypi/pico-examples/tree/master/clocks
     }
     

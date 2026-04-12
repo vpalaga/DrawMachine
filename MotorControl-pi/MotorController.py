@@ -1,5 +1,5 @@
 from MotorOverclass import StepperMotor
-from CDC_send import Transmiter, t
+from CDC_send import Transmitter, t
 import settings
 
 class MotorOutOfRangeError(Exception):#
@@ -9,7 +9,7 @@ class MotorOutOfRangeError(Exception):#
 
 
 class MotorController:
-    """control x and y motors with move(x, y) function, use calibrate to reset motor positions to 0, 0
+    """control x and y motors with the move (x, y) function, use calibrating to reset motor positions to 0, 0
        and move servos
     """
     starting_offsets_user_presets = { # in mm from left bottom corner
@@ -20,9 +20,9 @@ class MotorController:
         self.name = name
 
         # CDC send instruction object
-        self.transmiter = Transmiter(False)
+        self.transmitter = Transmitter(console=False)
 
-        #steppermotor objects to store the bullshit motor data
+        #stepper motor objects to store the bullshit motor data
         self.x_motor = StepperMotor(name="x_motor", max_pos_mm=297) # measure
         self.y_motor = StepperMotor(name="y_motor", max_pos_mm=210) # measure
 
@@ -33,12 +33,12 @@ class MotorController:
         #    self.starting_offset = move_format
 
         #starting sequence
-        if not __name__ == "__main__": # when running from this file don't proceed with flowing, running from main:
+        if not __name__ == "__main__": # when running from this file, don't proceed with to flow, running from main:
             # "CALIBRATE" the driver
             self.calibrate()
 
     def move_to_mm(self, x_target:float, y_target:float)->None:
-        """(target - current)(x, y)"""
+        """(target - current) (x, y)"""
         
         x_move = x_target - self.x_motor.pos_mm
         y_move = y_target - self.y_motor.pos_mm
@@ -56,11 +56,11 @@ class MotorController:
 
             self.x_motor.pos_mm += x # update the mm variable in stepper object
 
-            # calculate the steps, based on the position of requried mm pos and current mm pos, due to to rounding errors
+            # calculate the steps, based on the position of required mm pos and current mm pos, due to rounding errors
             x_steps = round(StepperMotor.STEPS_P_MM * (self.x_motor.pos_mm - x_motor_move_starting_mmpos)) # 10mm*1800steps = 18000 steps
 
         else:
-            raise MotorOutOfRangeError("position: motorX: "  + str(self.x_motor.pos_mm + x))
+            raise MotorOutOfRangeError("position: motor X: "  + str(self.x_motor.pos_mm + x))
         # check y pos
 
         if self.y_motor.check_pos(y):
@@ -69,13 +69,13 @@ class MotorController:
 
             self.y_motor.pos_mm += y # update the mm variable in stepper object
 
-            # calculate the steps, based on the position of requried mm pos and current mm pos, due to to rounding errors
+            # calculate the steps, based on the position of required mm pos and current mm pos, due to rounding errors
             y_steps = round(StepperMotor.STEPS_P_MM * (self.y_motor.pos_mm - y_motor_move_starting_mmpos)) # 10mm*1800steps = 18000 steps
 
         else:
-            raise MotorOutOfRangeError("position: motorY: "  + str(self.y_motor.pos_mm + y))
+            raise MotorOutOfRangeError("position: motor Y: "  + str(self.y_motor.pos_mm + y))
 
-        # x or y may be undefinned, but if they are, Motor error will be raised
+        # x or y may be undefined, but if they are, Motor error will be raised
         
         self.step_move(x=x_steps, y=y_steps)
 
@@ -85,10 +85,10 @@ class MotorController:
 
         if not settings.TEST_MODE:
 
-            recive_state = self.transmiter.send_and_receive("MOV " + str(x) + " " + str(y) + "\n")
-            print(f"{t()}: Move: {recive_state=}")
+            receive_state = self.transmitter.send_and_receive("MOV " + str(x) + " " + str(y) + "\n")
+            print(f"{t()}: Move: {receive_state=}")
 
-            finish_state = self.transmiter.send_and_receive(None) # wait for finish
+            finish_state = self.transmitter.send_and_receive(None) # wait for finish
             print(f"{t()}: Move: {finish_state=}\n")
 
 
@@ -98,13 +98,13 @@ class MotorController:
         print(f"{t()}: requesting: Calibrate")
 
         if not settings.TEST_MODE:
-            recive_state = self.transmiter.send_and_receive("CLB\n")
-            print(f"{t()}: Calibrate: {recive_state=}")
+            receive_state = self.transmitter.send_and_receive("CLB\n")
+            print(f"{t()}: Calibrate: {receive_state=}")
 
-            finish_state = self.transmiter.send_and_receive(None) # wait for finish
+            finish_state = self.transmitter.send_and_receive(None) # wait for finish
             print(f"{t()}: Calibrate: {finish_state=}\n")
             
-            # move to starting ofset
+            # move to starting offset
             self.move_to_mm(*MotorController.starting_offsets_user_presets["A4"])
 
         # reset the motors
@@ -118,10 +118,10 @@ class MotorController:
         print(f"{t()}: requesting: penUp")
         
         if not settings.TEST_MODE:
-            recive_state = self.transmiter.send_and_receive("SCA 0 30P\n")
-            print(f"{t()}: penUp: {recive_state=}")
+            receive_state = self.transmitter.send_and_receive("SCA 0 30P\n")
+            print(f"{t()}: penUp: {receive_state=}")
 
-            finish_state = self.transmiter.send_and_receive(None) # wait for finish
+            finish_state = self.transmitter.send_and_receive(None) # wait for finish
             print(f"{t()}: penUp: {finish_state=}\n")
 
     def penDown(self):
@@ -129,17 +129,17 @@ class MotorController:
         print(f"{t()}: requesting: penDown")
         
         if not settings.TEST_MODE:
-            recive_state = self.transmiter.send_and_receive("SCA 0 0\n")    
-            print(f"{t()}: penDown ret: {recive_state=}")
+            receive_state = self.transmitter.send_and_receive("SCA 0 0\n")
+            print(f"{t()}: penDown ret: {receive_state=}")
 
-            finish_state = self.transmiter.send_and_receive(None) # wait for finish
+            finish_state = self.transmitter.send_and_receive(None) # wait for finish
             print(f"{t()}: penDown: {finish_state=}\n")
     def wait(self, secs):
         print(f"{t()}: requesting: wait")
         
-        recive_state = self.transmiter.send_and_receive("WAT " + secs + "\n")    
-        print(f"{t()}: wait ret: {recive_state=}")
+        receive_state = self.transmitter.send_and_receive("WAT " + secs + "\n")
+        print(f"{t()}: wait ret: {receive_state=}")
 
-        finish_state = self.transmiter.send_and_receive(None) # wait for finish
+        finish_state = self.transmitter.send_and_receive(None) # wait for finish
         print(f"{t()}: wait: {finish_state=}\n")
             

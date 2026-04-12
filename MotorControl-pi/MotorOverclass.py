@@ -22,7 +22,7 @@ class StepperMotor:
                 "pos_mm"  : self.pos_mm,}
 
     def check_pos(self, difference:float)->bool:
-        """check positon [mm] = current pos [mm]+ difference [mm] """
+        """check position [mm] = current pos [mm]+ difference [mm] """
         pos = self.pos_mm + difference
 
         if 0 <= pos <= self.max_pos_mm: # check if the provided pos is in movement range

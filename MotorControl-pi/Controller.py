@@ -1,6 +1,6 @@
 from MotorController import MotorController
 
-class Controller():
+class Controller:
     
     def __init__(self, file_path:str):
         self.file_path:str = file_path
@@ -17,15 +17,15 @@ class Controller():
         instructions_len_string_len = len(str(instructions_len))
 
         for i, line in enumerate(self.instructions[header_size:]): # skip from after the header
-            current_istruction:list[str] = line.split(" ")
+            current_instruction:list[str] = line.split(" ")
             
-            instruction_type:str = current_istruction[0]
+            instruction_type:str = current_instruction[0]
             print(f"Instruction: {i:>{instructions_len_string_len}}/{instructions_len}")
 
             match instruction_type:
                 case "MOV":
                     # pass the x and y argument
-                    self.motor_driver.move_to_mm(float(current_istruction[1]), float(current_istruction[2]))
+                    self.motor_driver.move_to_mm(float(current_instruction[1]), float(current_instruction[2]))
                 case "CLB":
                     self.motor_driver.calibrate()
                 case "PUP":
@@ -33,4 +33,4 @@ class Controller():
                 case "PDN": 
                     self.motor_driver.penDown()
                 case "WAT":
-                    self.motor_driver.wa
+                    self.motor_driver.wait(float(current_instruction[0]))

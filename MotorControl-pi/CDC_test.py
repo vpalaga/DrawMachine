@@ -1,8 +1,7 @@
-from CDC_send import Transmiter
-import time
+from CDC_send import Transmitter
 import time
 
-transm = Transmiter(console=True)
+transmitter = Transmitter(console=False)
 
 inst = ["WAT 1\n",
         "MOV 10000 3000\n",
@@ -11,15 +10,15 @@ inst = ["WAT 1\n",
         "SCA 0 -90\n",]
 
 time.sleep(1)
-receive_response = transm.send_and_receive("CLB\n")
-print("recive " + str(receive_response))
+receive_response = transmitter.send_and_receive("CLB\n")
+print("receive " + str(receive_response))
 
 if True:
-    finish_state = transm.send_and_receive(None)
+    finish_state = transmitter.send_and_receive(None)
     print("finish " + str(finish_state))
 
 time.sleep(1)
-transm.console()
+#transmitter.console()
 
 i = 3
 try:
@@ -40,4 +39,4 @@ try:
         
         time.sleep(4)
 finally:
-    transm.__deinit__()
+    transmitter.__deinit__()
