@@ -33,4 +33,4 @@ class Controller:
                 case "PDN": 
                     self.motor_driver.penDown()
                 case "WAT":
-                    self.motor_driver.wait(float(current_instruction[0]))
+                    self.motor_driver.wait(float(current_instruction[1]))

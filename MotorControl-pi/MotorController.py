@@ -32,10 +32,11 @@ class MotorController:
         #else: # user can input custom (offset_x, offset_y)
         #    self.starting_offset = move_format
 
-        #starting sequence
-        if not __name__ == "__main__": # when running from this file, don't proceed with to flow, running from main:
-            # "CALIBRATE" the driver
-            self.calibrate()
+        # move to the starting position
+        self.mm_move(*self.starting_offset)
+        # reset positon to 0,0
+        self.x_motor.reset()
+        self.y_motor.reset()
 
     def move_to_mm(self, x_target:float, y_target:float)->None:
         """(target - current) (x, y)"""
@@ -79,7 +80,6 @@ class MotorController:
         
         self.step_move(x=x_steps, y=y_steps)
 
-
     def step_move(self, x:int, y:int)->None:
         print(f"{t()}: requesting: Move, steps: x: {x} y: {y} estimated time: {max(x, y)/5000}s")
 
@@ -91,8 +91,6 @@ class MotorController:
             finish_state = self.transmitter.send_and_receive(None) # wait for finish
             print(f"{t()}: Move: {finish_state=}\n")
 
-
-
     def calibrate(self)->None:
         # send calibrate instruction
         print(f"{t()}: requesting: Calibrate")
@@ -103,7 +101,7 @@ class MotorController:
 
             finish_state = self.transmitter.send_and_receive(None) # wait for finish
             print(f"{t()}: Calibrate: {finish_state=}\n")
-            
+
             # move to starting offset
             self.move_to_mm(*MotorController.starting_offsets_user_presets["A4"])
 
@@ -134,6 +132,7 @@ class MotorController:
 
             finish_state = self.transmitter.send_and_receive(None) # wait for finish
             print(f"{t()}: penDown: {finish_state=}\n")
+
     def wait(self, secs):
         print(f"{t()}: requesting: wait")
         
