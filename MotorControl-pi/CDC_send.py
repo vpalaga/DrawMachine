@@ -1,4 +1,5 @@
 import serial
+import serial.tools.list_ports
 import time
 import settings as s
 
@@ -31,8 +32,22 @@ class ConsoleError(Exception):
 # replace with your Pico’s serial port name;
 # on Linux it might be "/dev/ttyACM0" or similar
 # on Windows something like "COM3"
+
+def r(m:bool|str)->str:
+    if isinstance(m, bool):
+        if not m:
+            return "OK"
+        return "ERROR"
+    return m
+
+def find_pico_serial_port():
+    for port in serial.tools.list_ports.comports():
+        if "2E8A" in port.hwid:  # Raspberry Pi VID
+            return port.device, port.product
+    raise PicoTimeoutError("ERROR: can't find Pico on any serial ports")
+
 class Transmitter:
-    SERIAL_PORT = "COM5"
+    SERIAL_PORT, device = find_pico_serial_port()
     BAUDRATE = 115200
     RESPONSE_TIMEOUT_S = 200 # it can take a long time to travel long distance
 
@@ -43,15 +58,18 @@ class Transmitter:
         self.console_mode = console
 
         # open the serial connection
+        print(f"OK: connecting to {Transmitter.device} on {Transmitter.SERIAL_PORT}...")
         self.ser = serial.Serial(self.SERIAL_PORT, self.BAUDRATE, timeout=1)
 
         time.sleep(1)    # short delay to let the port settle
-
+        print(f"OK: successfully connected")
+        # set pico console mode
         pico_receive = self.send_and_receive("SCM " + str(int(console)) + '\n')
-        print(f"pico consoleMode: {console}, returned: {pico_receive}")
+        print(f"OK: pico consoleMode: {console}, returned: {r(pico_receive)}")
 
+        # wait for response
         pico_finish = self.send_and_receive(None)
-        print(f"pico consoleMode: {console}, finished: {pico_finish}")
+        print(f"OK: pico consoleMode: {console}, finished: {r(pico_finish)}")
 
     def send_and_receive(self, message:str|None) -> bool|str: 
         """
@@ -61,11 +79,11 @@ class Transmitter:
         """
 
         if message is not None: # allow empty messages for only waiting for response
+
             #check whether the message contains '\n'
-            if not s.SPEED_MODE:
-                if list(message)[-1] != '\n':
-                    raise FormatError("message: " + message + " is missing a '\n'")
-                
+            if list(message)[-1] != '\n':
+                raise FormatError("message: " + message + " is missing a '\n'")
+
             self.ser.write(message.encode("utf-8")) # send encoded byte message
             
         start_time = time.time()
@@ -103,12 +121,13 @@ class Transmitter:
 
         if not self.console_mode:
             raise ConsoleError("pico isn't in console Mode")
-        
-        print("Pico Console: ")
+
+        print("OK: Pico Console: ")
         while True:
             pico_ret = self.send_and_receive(None) 
             print(str(t()) + ": " + str(pico_ret))
 
 
     def __deinit__(self):
+        print(f"OK: closing serial port: {Transmitter.SERIAL_PORT}")
         self.ser.close()
