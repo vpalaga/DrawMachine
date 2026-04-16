@@ -6,7 +6,7 @@ class FCODE:
     }
     def __init__(self, size: tuple[float, float]|str, name:str):
 
-        if type(size) == str: # convert from str type to x_mm, y_mm
+        if isinstance(size,str): # convert from str type to x_mm, y_mm
             if size in FCODE.paper_sizes.keys():
                 size = FCODE.paper_sizes[size]
             else:

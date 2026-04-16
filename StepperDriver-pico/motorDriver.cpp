@@ -4,6 +4,7 @@
 #include <sstream>
 #include <map>
 #include <math.h>
+#include <cmath>
 #include <cstdint>
 
 #include "pico/stdlib.h"
@@ -38,10 +39,6 @@ const int INSTRUCION_TIMEOUT_MS = 3000;
 
 const int STEPS_P_ROT = 1000;
 const int ROD_PICH_mm = 2;
-
-// speed profile vals
-const int FASTEST_STEPPER_US = 110;
-const int SLOWEST_STEPPER_uS = 400;
 
 const int USE_SPROFILE_FROM_STEPS = 200;
 // PCA9685 I2C0 and SDA, change maybe to consts later
@@ -403,15 +400,37 @@ public:
         : xStepperMotor(x_stp, x_dir, 100),
           yStepperMotor(y_stp, y_dir, 100) {
     }
-    double speed_profile(double val){
-        double ret = (SLOWEST_STEPPER_uS * (1 - sin(val * 3.14159)));
+    double speed_profile(double val, int raw_steps, int max_steps){
+        // --- tuning parameters ---
+        const double min_delay = 110.0;   // fastest (µs)
+        const double max_delay = 440.0;   // slowest (µs)
+        const int steps_to_acc_or_dec = 400;
 
-        // cut off
-        if (ret<FASTEST_STEPPER_US){return FASTEST_STEPPER_US;}
+        double ret;
+
+        // Distance from start and end
+        int steps_from_start = raw_steps;
+        int steps_to_end = max_steps - raw_steps;
+
+        // --- Acceleration phase ---
+        if (steps_from_start < steps_to_acc_or_dec) {
+            double t = (double)steps_from_start / steps_to_acc_or_dec; // 0 → 1
+            double curve = (1 - cos(t * M_PI)) / 2.0;
+            ret = max_delay - (max_delay - min_delay) * curve;
+
+        // --- Deceleration phase ---
+        } else if (steps_to_end < steps_to_acc_or_dec) {
+            double t = (double)steps_to_end / steps_to_acc_or_dec; // 1 → 0
+            double curve = (1 - cos(t * M_PI)) / 2.0;
+            ret = max_delay - (max_delay - min_delay) * curve;
+
+        // --- Cruise phase ---
+        } else {
+            ret = min_delay;
+        }
 
         return ret;
     }
-
     void bresenham(Stepper leadStepper, Stepper followStepper, int lead, int follow, bool leadDir, bool followDir){
         // how many steps of follow pro one step of lead
         float bresenhamStep = (float)follow / lead; // needs to be <0 
@@ -438,7 +457,7 @@ public:
             followPos += diffFollowCycle;
             
             // use profile only if the distance is greater than x steps
-            sleep_us_profile = (useSpeedProfile) ? speed_profile((cycle) * procent_scaler) : FASTEST_STEPPER_US;
+            sleep_us_profile = (useSpeedProfile) ? speed_profile((cycle) * procent_scaler, cycle, lead) : (double)110;
             //move the steppers accordingly
             leadStepper.step(  leadDir,  1,              sleep_us_profile);
             followStepper.step(followDir,diffFollowCycle,sleep_us_profile); // move the follow if needed
@@ -481,9 +500,6 @@ public:
 // display object
 HW069 display(14, 15);
 
-// end swiches, use with calibrate
-Swich xSwich(27); // GPIo 26
-Swich ySwich(26); // GPIO 27
 
 // manual control swiches
 Swich mSwich_XP(5);
@@ -500,7 +516,11 @@ LED ledConsoleMode(17);
 LED onLed(16);
 
 // driver: xstp xdir ystp ydir
-StepperDriver stepper_driver(21, 20, 19, 18);
+StepperDriver stepper_driver(19, 18, 21, 20);
+
+// end swiches, use with calibrate
+Swich xSwich(26); // GPIo 26
+Swich ySwich(27); // GPIO 27
 
 // servoDriver
 PCA9685 servoDriver;   

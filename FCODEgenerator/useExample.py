@@ -1,7 +1,8 @@
 from main import FGenerator
 
-# create a generatin object
-gen = FGenerator(r'C:\Users\vit\OneDrive\Documents\GitHub\DrawMachine\FCODEgenerator\dxfexamples\circle.dxf', acc=.1, vis_scale=10, text=False)
+# create a generating object
+gen = FGenerator(r'C:\Users\vit\OneDrive\Documents\GitHub\DrawMachine\FCODEgenerator\dxfexamples\better_circle.dxf',
+                 acc=.1, vis_scale=10, text=False)
 
 # generate the FCODE from the provided dxf file
 gen.generate_instructions()

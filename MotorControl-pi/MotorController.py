@@ -12,7 +12,7 @@ class MotorController:
        and move servos
     """
     starting_offsets_user_presets = { # in mm from left bottom corner
-        "A4": (25, 37) # measure
+        "A4": (45, 40) # measure
     }
 
     def __init__(self, move_format="A4"):
@@ -21,8 +21,8 @@ class MotorController:
         self.transmitter = Transmitter(console=False)
 
         #stepper motor objects to store the bullshit motor data
-        self.x_motor = StepperMotor(name="x_motor", max_pos_mm=297, tmc_mirco_spt=24.6) # measure
-        self.y_motor = StepperMotor(name="y_motor", max_pos_mm=210, tmc_mirco_spt=10.5) # measure
+        self.x_motor = StepperMotor(name="x_motor", max_pos_mm=297, tmc_mirco_spt=16) # measure
+        self.y_motor = StepperMotor(name="y_motor", max_pos_mm=210, tmc_mirco_spt=16) # measure
 
         # deal with starting offset (x, y)
         if move_format in MotorController.starting_offsets_user_presets.keys():# and type(move_format) == str:
