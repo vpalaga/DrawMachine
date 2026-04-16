@@ -7,7 +7,6 @@ class MotorOutOfRangeError(Exception):#
         self.message = message
         super().__init__(self.message)
 
-
 class MotorController:
     """control x and y motors with the move (x, y) function, use calibrating to reset motor positions to 0, 0
        and move servos
@@ -16,15 +15,14 @@ class MotorController:
         "A4": (25, 37) # measure
     }
 
-    def __init__(self, name="motorController", move_format="A4"):
-        self.name = name
+    def __init__(self, move_format="A4"):
 
         # CDC send instruction object
         self.transmitter = Transmitter(console=False)
 
         #stepper motor objects to store the bullshit motor data
-        self.x_motor = StepperMotor(name="x_motor", max_pos_mm=297) # measure
-        self.y_motor = StepperMotor(name="y_motor", max_pos_mm=210) # measure
+        self.x_motor = StepperMotor(name="x_motor", max_pos_mm=297, tmc_mirco_spt=24.6) # measure
+        self.y_motor = StepperMotor(name="y_motor", max_pos_mm=210, tmc_mirco_spt=10.5) # measure
 
         # deal with starting offset (x, y)
         if move_format in MotorController.starting_offsets_user_presets.keys():# and type(move_format) == str:
@@ -32,11 +30,8 @@ class MotorController:
         #else: # user can input custom (offset_x, offset_y)
         #    self.starting_offset = move_format
 
-        # move to the starting position
-        self.mm_move(*self.starting_offset)
-        # reset positon to 0,0
-        self.x_motor.reset()
-        self.y_motor.reset()
+        # calib
+        self.calibrate()
 
     def move_to_mm(self, x_target:float, y_target:float)->None:
         """(target - current) (x, y)"""
@@ -58,7 +53,7 @@ class MotorController:
             self.x_motor.pos_mm += x # update the mm variable in stepper object
 
             # calculate the steps, based on the position of required mm pos and current mm pos, due to rounding errors
-            x_steps = round(StepperMotor.STEPS_P_MM * (self.x_motor.pos_mm - x_motor_move_starting_mmpos)) # 10mm*1800steps = 18000 steps
+            x_steps = round(self.x_motor.steps_p_mm * (self.x_motor.pos_mm - x_motor_move_starting_mmpos)) # 10mm*1800steps = 18000 steps
 
         else:
             raise MotorOutOfRangeError("position: motor X: "  + str(self.x_motor.pos_mm + x))
@@ -71,7 +66,7 @@ class MotorController:
             self.y_motor.pos_mm += y # update the mm variable in stepper object
 
             # calculate the steps, based on the position of required mm pos and current mm pos, due to rounding errors
-            y_steps = round(StepperMotor.STEPS_P_MM * (self.y_motor.pos_mm - y_motor_move_starting_mmpos)) # 10mm*1800steps = 18000 steps
+            y_steps = round(self.y_motor.steps_p_mm * (self.y_motor.pos_mm - y_motor_move_starting_mmpos)) # 10mm*1800steps = 18000 steps
 
         else:
             raise MotorOutOfRangeError("position: motor Y: "  + str(self.y_motor.pos_mm + y))
@@ -142,3 +137,8 @@ class MotorController:
         finish_state = self.transmitter.send_and_receive(None) # wait for finish
         print(f"{t()}: wait: {finish_state=}\n")
             
+if __name__ == "__main__":
+    t = MotorController()
+    while True:
+        m = input("M:").strip()
+        eval(m)

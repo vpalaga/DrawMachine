@@ -486,10 +486,10 @@ Swich xSwich(27); // GPIo 26
 Swich ySwich(26); // GPIO 27
 
 // manual control swiches
-Swich mSwich_XP(2);
+Swich mSwich_XP(5);
 Swich mSwich_XM(4);
 Swich mSwich_YP(3);
-Swich mSwich_YM(5);
+Swich mSwich_YM(2);
 
 Swich mSwich_B1(6);
 Swich mSwich_B2(7);
@@ -682,25 +682,49 @@ void manual_instruction(){
     int8_t x_move = 0;
     int8_t y_move = 0;
 
-    if(mSwich_XP.getSwichState()){x_move++;}
+    if(mSwich_XP.getSwichState()){
+        x_move++;
+        if(consoleEnabled == 1){
+            printf("B1 (xp): pressed");
+        }    
+    }
 
-    if(mSwich_XM.getSwichState()){x_move--;}
+    if(mSwich_XM.getSwichState()){
+        x_move--;
+        if(consoleEnabled == 1){
+            printf("B2 (xm): pressed");
+        }    
+    }
 
-    if(mSwich_YP.getSwichState()){y_move++;}
+    if(mSwich_YP.getSwichState()){
+        y_move++;
+        if(consoleEnabled == 1){
+            printf("B3 (yp): pressed");
+        }    
+    }
 
-    if(mSwich_YM.getSwichState()){y_move--;}
+    if(mSwich_YM.getSwichState()){
+        y_move--;
+        if(consoleEnabled == 1){
+            printf("B4 (ym): pressed");
+        }    
+    }
 
     // undefined
     if(mSwich_B1.getSwichState()){ // print head position
         if (consoleEnabled == 1){
             auto[x,y] = stepper_driver.stepper_pos();
             printf("head pos: X: %.4fmm, Y: %.4fmm \n", (x * MM_p_STEP), (y * MM_p_STEP)); // round up to 4 digets -> r(10**4)/10**4
-
+            printf("B5: pressed");
             sleep_ms(700);
         }
     }
 
-    if(mSwich_B2.getSwichState()){;}
+    if(mSwich_B2.getSwichState()){
+        if(consoleEnabled){
+            printf("B6: pressed");
+        }    
+}
 
     // move the motors if needed
     if (x_move != 0 || y_move != 0){

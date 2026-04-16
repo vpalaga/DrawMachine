@@ -41,13 +41,14 @@ def r(m:bool|str)->str:
     return m
 
 def find_pico_serial_port():
+    print("searching for pico...")
     for port in serial.tools.list_ports.comports():
         if "2E8A" in port.hwid:  # Raspberry Pi VID
-            return port.device, port.product
+            return port.device
     raise PicoTimeoutError("ERROR: can't find Pico on any serial ports")
 
 class Transmitter:
-    SERIAL_PORT, device = find_pico_serial_port()
+    SERIAL_PORT = find_pico_serial_port()
     BAUDRATE = 115200
     RESPONSE_TIMEOUT_S = 200 # it can take a long time to travel long distance
 
@@ -58,7 +59,7 @@ class Transmitter:
         self.console_mode = console
 
         # open the serial connection
-        print(f"OK: connecting to {Transmitter.device} on {Transmitter.SERIAL_PORT}...")
+        print(f"OK: connecting to Pico on {Transmitter.SERIAL_PORT}...")
         self.ser = serial.Serial(self.SERIAL_PORT, self.BAUDRATE, timeout=1)
 
         time.sleep(1)    # short delay to let the port settle
