@@ -15,6 +15,13 @@
 
 #include "algorithm"
 
+#include "drivers/HW069.h"
+#include "drivers/Led.h"
+#include "drivers/StepperDriver.h" 
+#include "drivers/SwitchButton.h"
+#include "drivers/Stepper.h"
+
+
 using namespace std;
 
 
@@ -37,10 +44,6 @@ const int LED_SYSTEM = 25;
 const int BUF_MAX_LEN = 128;
 const int INSTRUCION_TIMEOUT_MS = 3000; 
 
-const int STEPS_P_ROT = 1000;
-const int ROD_PICH_mm = 2;
-
-const int USE_SPROFILE_FROM_STEPS = 200;
 // PCA9685 I2C0 and SDA, change maybe to consts later
 // I2C defines
 // This example will use I2C0 on GPIO8 (SDA) and GPIO9 (SCL) running at 400KHz.
@@ -58,9 +61,6 @@ const int USE_SPROFILE_FROM_STEPS = 200;
 
 uint8_t consoleEnabled = 2; // 2 for unassigned 1 true 0 false
 
-const int STEPS_P_1MM = STEPS_P_ROT / ROD_PICH_mm;
-const double MM_p_STEP = (double)1 / STEPS_P_1MM;
-
 // instruction type vs arguments
 const map<string, int> INSTRUCTION_SIZES = {
     {"MOV", 2},// xsteps ysteps
@@ -71,459 +71,30 @@ const map<string, int> INSTRUCTION_SIZES = {
 };
 //=============================================================
 
-class PCA9685{
-public:
-    PCA9685(){
-        // init the pins
-        // I2C Initialisation. Using it at 400Khz.
-
-        i2c_init(I2C_PORT, 400*1000);
-
-        gpio_set_function(I2C_SDA, GPIO_FUNC_I2C);
-        gpio_set_function(I2C_SCL, GPIO_FUNC_I2C);
-        gpio_pull_up(I2C_SDA);
-        gpio_pull_up(I2C_SCL);
-
-        // For more examples of I2C use see https://github.com/raspberrypi/pico-examples/tree/master/i2c
-
-        pca9685_init();
-    }
-
-    void pca9685_write(uint8_t reg, uint8_t value) {
-        uint8_t buf[2] = {reg, value};
-        i2c_write_blocking(I2C_PORT, PCA9685_ADDR, buf, 2, false);
-    }
-
-    void pca9685_init() {
-        // Reset
-        pca9685_write(MODE1, 0x00);
-        sleep_ms(10);
-
-        // Set PWM frequency to 50Hz
-        float prescaleval = 25000000.0;
-        prescaleval /= 4096.0;
-        prescaleval /= 50.0;
-        prescaleval -= 1.0;
-
-        uint8_t prescale = (uint8_t)(prescaleval + 0.5);
-
-        pca9685_write(MODE1, 0x10);        // Sleep
-        pca9685_write(PRESCALE, prescale);
-        pca9685_write(MODE1, 0x00);
-        sleep_ms(5);
-        pca9685_write(MODE1, 0xA1);        // Auto-increment
-    }
-
-    void set_pwm(uint8_t channel, uint16_t on, uint16_t off) {
-        uint8_t reg = LED0_ON_L + 4 * channel;
-
-        uint8_t buf[5]; // Some compilers treat this as narrowing from int to uint8_t.
-        buf[0] = reg;
-        buf[1] = (uint8_t)(on & 0xFF);
-        buf[2] = (uint8_t)(on >> 8);
-        buf[3] = (uint8_t)(off & 0xFF);
-        buf[4] = (uint8_t)(off >> 8);
-        
-        i2c_write_blocking(I2C_PORT, PCA9685_ADDR, buf, 5, false);
-    }
-
-    void set_servo_angle(uint8_t channel, float angle) {
-        float pulse_min = 205;  // ~1ms
-        float pulse_max = 410;  // ~2ms
-
-        float pulse = pulse_min + (angle / 180.0f) * (pulse_max - pulse_min);
-        set_pwm(channel, 0, (uint16_t)pulse);
-    }
-
-};
-
-class HW069{
-    public:
-        int8_t CLK;
-        int8_t DIO;
-
-        HW069(int CLK_init_,int DIO_init_){
-            CLK = CLK_init_;
-            DIO = DIO_init_;
-            
-            // Initialize GPIO pins used for the TM1637 interface
-            gpio_init(CLK);
-            gpio_init(DIO);
-            gpio_set_dir(CLK, GPIO_OUT);
-            gpio_set_dir(DIO, GPIO_OUT);
-            // Idle high
-            gpio_put(CLK, 1);
-            gpio_put(DIO, 1);
-        }
-
-        uint8_t int_to_segment(int i){
-            switch (i){
-            case 0: return 0x3f; // 0
-            case 1: return 0x06; // 1
-            case 2: return 0x5b; // 2
-            case 3: return 0x4f; // 3
-            case 4: return 0x66; // 4
-            case 5: return 0x6d; // 5
-            case 6: return 0x7d; // 6
-            case 7: return 0x07; // 7
-            case 8: return 0x7f; // 8
-            case 9: return 0x6f; // 9
-            default: return 0x00;
-            }
-        }
-
-        uint8_t char_to_segment(char c) {
-            switch (c) {
-            case '0': return 0x3F;
-            case '1': return 0x06;
-            case '2': return 0x5B;
-            case '3': return 0x4F;
-            case '4': return 0x66;
-            case '5': return 0x6D;
-            case '6': return 0x7D;
-            case '7': return 0x07;
-            case '8': return 0x7F;
-            case '9': return 0x6F;
-            case 'A': case 'a': return 0x77; // A
-            case 'B': case 'b': return 0x7C; // b (lowercase-style)
-            case 'C': case 'c': return 0x39; // C
-            case 'D': case 'd': return 0x5E; // d (lowercase-style)
-            case 'E': case 'e': return 0x79; // E
-            case 'F': case 'f': return 0x71; // F
-            case 'G': case 'g': return 0x6F; // G=9 
-            case 'H': case 'h': return 0x76; // H
-            case 'I': case 'i': return 0x06; // I=1
-            case 'J': case 'j': return 0x1E; // J
-            case 'L': case 'l': return 0x38; // L
-            case 'P': case 'p': return 0x73; // P
-            case 'U': case 'u': return 0x3E; // U
-            case 'Y': case 'y': return 0x6E; // Y
-            case 'V': case 'v': return 0x1c;
-
-            case 'O': return 0x3F; // O=0
-            case 'o': return 0x5c;
-
-            case 'T': case 't': return 0x07; // t own
-            case '-': return 0x40; // minus (g)
-            case ' ': return 0x00; // blank
-            case '_': return 0x08;
-            case '"': return 0x22;
-            default: return 0x00; // unknown -> blank
-            }
-        }
-
-        void tm_delay() {
-            sleep_us(5);
-        }
-
-        void tm_start() {
-            gpio_set_dir(DIO, GPIO_OUT);
-            gpio_put(DIO, 1);
-            gpio_put(CLK, 1);
-            tm_delay();
-            gpio_put(DIO, 0);
-        }
-
-        void tm_stop() {
-            gpio_put(CLK, 0);
-            tm_delay();
-            gpio_put(DIO, 0);
-            tm_delay();
-            gpio_put(CLK, 1);
-            tm_delay();
-            gpio_put(DIO, 1);
-        }
-
-        void tm_write(uint8_t data) {
-            for (int i = 0; i < 8; i++) {
-                gpio_put(CLK, 0);
-                gpio_put(DIO, data & 0x01);
-                tm_delay();
-                gpio_put(CLK, 1);
-                tm_delay();
-                data >>= 1;
-            }
-
-            // ACK
-            gpio_put(CLK, 0);
-            gpio_set_dir(DIO, GPIO_IN);
-            tm_delay();
-            gpio_put(CLK, 1);
-            tm_delay();
-            gpio_set_dir(DIO, GPIO_OUT);
-        }
-
-        void display_number(int num) {
-            uint8_t digits[4] = {
-            int_to_segment((num / 1000) % 10),
-            int_to_segment((num / 100) % 10),
-            int_to_segment((num / 10) % 10),
-            int_to_segment(num % 10)
-            };
-
-            tm_start();
-            tm_write(0x40); // auto increment
-            tm_stop();
-
-            tm_start();
-
-            tm_write(0xC0); // start at digit 0
-            for (int i = 0; i < 4; i++)
-            tm_write(digits[i]);
-            tm_stop();
-
-            tm_start();
-            tm_write(0x8A); // display ON, brightness level 2
-            tm_stop();
-        }
-
-        void display_text(const char *s) {
-            uint8_t segs[4] = {0,0,0,0};
-            // simple left align, show first 4 chars
-            for (int i = 0; i < 4 && s[i]; ++i) segs[i] = char_to_segment(s[i]);
-            
-            tm_start();
-            tm_write(0x40); // auto increment
-            tm_stop();
-
-            tm_start();
-            tm_write(0xC0); // start at digit 0
-            for (int i = 0; i < 4; ++i) tm_write(segs[i]);
-            tm_stop();
-
-            tm_start();
-            tm_write(0x8A); // display ON, brightness level 2
-            tm_stop();
-
-        }
-};
-
-class Swich{
-    public:
-        // GPIO Pin
-        uint pin;
-        Swich(uint pin_init_){ // GPIO pin of the swich
-            pin = pin_init_;
-
-            gpio_init(pin);
-            gpio_set_dir(pin, GPIO_IN);
-            // set up the PINS thru internal resisitor to 50KΩ
-            gpio_pull_up(pin);   // enable internal pull-up
-        }
-
-        bool getSwichState(){
-            // false = open, true = closed -> stop movement
-            // check wheter they are pulling any current
-            
-            if (!gpio_get(pin)) {   // LOW = pressed
-                return true;
-            } else {
-                return false;
-            }
-        }
-
-};
-
-class LED{
-public:
-    uint pin;
-    bool state = false;
-
-    LED(uint pin_init_){
-        pin = pin_init_;
-        
-        gpio_init(pin);             // initialize the GPIO pin
-        gpio_set_dir(pin, GPIO_OUT);// set it as output
-    }
-
-    void toggleLed(){
-        state = !state;
-
-        gpio_put(pin, state);
-    }
-
-    void setState(bool set_to){
-        if (set_to != state){
-            state = set_to;
-
-            gpio_put(pin, state);
-        }
-    }
-};
-
-class Stepper{
-    public:
-        uint stepPin;
-        uint dirPin;
-        int us_delay;
-
-        Stepper(uint stepPin_init_, uint dirPin_init_, int us_delay_init_){
-            stepPin = stepPin_init_;
-            dirPin = dirPin_init_;
-            us_delay = us_delay_init_;
-            
-            // init the out pis for the stepper
-            gpio_init(stepPin);
-            gpio_set_dir(stepPin, GPIO_OUT);
-
-            gpio_init(dirPin);
-            gpio_set_dir(dirPin, GPIO_OUT);
-
-        }
-
-        void step(bool dir, int steps, int delay){
-            us_delay = delay;
-
-            gpio_put(dirPin, dir);
-
-                for (int i = 0; i < steps; i++) {
-                    gpio_put(stepPin, 1);
-                    sleep_us(us_delay);
-                
-                    gpio_put(stepPin, 0);
-                    sleep_us(us_delay);
-                }
-        }
-
-};
-
-class StepperDriver{
-public:
-
-    Stepper xStepperMotor;
-    Stepper yStepperMotor;
-
-    int x_pos = 0;int y_pos = 0;
-
-    StepperDriver(uint8_t x_stp,uint8_t x_dir,uint8_t y_stp,uint8_t y_dir)
-
-        : xStepperMotor(x_stp, x_dir, 100),
-          yStepperMotor(y_stp, y_dir, 100) {
-    }
-    double speed_profile(double val, int raw_steps, int max_steps){
-        // --- tuning parameters ---
-        const double min_delay = 110.0;   // fastest (µs)
-        const double max_delay = 440.0;   // slowest (µs)
-        const int steps_to_acc_or_dec = 400;
-
-        double ret;
-
-        // Distance from start and end
-        int steps_from_start = raw_steps;
-        int steps_to_end = max_steps - raw_steps;
-
-        // --- Acceleration phase ---
-        if (steps_from_start < steps_to_acc_or_dec) {
-            double t = (double)steps_from_start / steps_to_acc_or_dec; // 0 → 1
-            double curve = (1 - cos(t * M_PI)) / 2.0;
-            ret = max_delay - (max_delay - min_delay) * curve;
-
-        // --- Deceleration phase ---
-        } else if (steps_to_end < steps_to_acc_or_dec) {
-            double t = (double)steps_to_end / steps_to_acc_or_dec; // 1 → 0
-            double curve = (1 - cos(t * M_PI)) / 2.0;
-            ret = max_delay - (max_delay - min_delay) * curve;
-
-        // --- Cruise phase ---
-        } else {
-            ret = min_delay;
-        }
-
-        return ret;
-    }
-    void bresenham(Stepper leadStepper, Stepper followStepper, int lead, int follow, bool leadDir, bool followDir){
-        // how many steps of follow pro one step of lead
-        float bresenhamStep = (float)follow / lead; // needs to be <0 
-
-        int followPos   = 0;
-        int followCycle;
-        int diffFollowCycle;
-        double sleep_us_profile;
-        bool useSpeedProfile = true;
-        
-        if (lead<USE_SPROFILE_FROM_STEPS){useSpeedProfile = false;}
-
-        double procent_scaler = (double)1 / lead;
-
-        for (int cycle = 1; cycle<lead+1; cycle++){ // cycle need to start at 1
-            
-            // calculate how many steps at current cycle position 
-            followCycle = round(cycle*bresenhamStep);
-            
-            // check how many are needed for this cycle
-            diffFollowCycle = followCycle - followPos;
-
-            // update the followPos to current follow position
-            followPos += diffFollowCycle;
-            
-            // use profile only if the distance is greater than x steps
-            sleep_us_profile = (useSpeedProfile) ? speed_profile((cycle) * procent_scaler, cycle, lead) : (double)110;
-            //move the steppers accordingly
-            leadStepper.step(  leadDir,  1,              sleep_us_profile);
-            followStepper.step(followDir,diffFollowCycle,sleep_us_profile); // move the follow if needed
-        }
-        return;
-    }
-
-    void move(int x, int y){
-
-        if(x == 0 && y == 0){return;}
-
-        // update stepper pos
-        x_pos += x; 
-        y_pos += y;
-
-        bool x_dir = (x<0) ? true : false; // change if the direction is wrong
-        bool y_dir = (y<0) ? true : false;
-
-        // set both to positive
-        x = abs(x); y = abs(y);
-
-        if (x >= y){ // x = lead
-            bresenham(xStepperMotor, yStepperMotor, x, y, x_dir, y_dir);    
-        } else {
-            bresenham(yStepperMotor, xStepperMotor, y, x, y_dir, x_dir);
-        }
-        return;
-    }
-
-    void pos_reset(){
-        x_pos = y_pos = 0;
-    }
-
-    pair<int,int> stepper_pos(){
-        pair<int,int> pos = make_pair(x_pos,y_pos);
-        return pos;
-    }
-};
-
 // display object
 HW069 display(14, 15);
 
-
 // manual control swiches
-Swich mSwich_XP(5);
-Swich mSwich_XM(4);
-Swich mSwich_YP(3);
-Swich mSwich_YM(2);
+SwitchButton mSwich_XP(5);
+SwitchButton mSwich_XM(4);
+SwitchButton mSwich_YP(3);
+SwitchButton mSwich_YM(2);
 
-Swich mSwich_B1(6);
-Swich mSwich_B2(7);
+SwitchButton mSwich_B1(6);
+SwitchButton mSwich_B2(7);
 
 // instruction led, when doing instruction than, on
-LED instructionLed(28);
-LED ledConsoleMode(17);
-LED onLed(16);
+Led instructionLed(28);
+Led ledConsoleMode(17);
+Led onLed(16);
 
 // driver: xstp xdir ystp ydir
 StepperDriver stepper_driver(19, 18, 21, 20);
 
 // end swiches, use with calibrate
-Swich xSwich(26); // GPIo 26
-Swich ySwich(27); // GPIO 27
+SwitchButton xSwich(26); // GPIo 26
+SwitchButton ySwich(27); // GPIO 27
 
-// servoDriver
-PCA9685 servoDriver;   
 
 class Instructions{
 public:
@@ -571,7 +142,7 @@ public:
     static bool servo_angle(uint8_t channel, float angle){
         display.display_text("SANG");
 
-        servoDriver.set_servo_angle(channel,angle); // set "DO"
+        // DOOOOOO this to move the pen up
 
         display.display_text("----");
         return false;
@@ -733,8 +304,7 @@ void manual_instruction(){
     // undefined
     if(mSwich_B1.getSwichState()){ // print head position
         if (consoleEnabled == 1){
-            auto[x,y] = stepper_driver.stepper_pos();
-            printf("head pos: X: %.4fmm, Y: %.4fmm \n", (x * MM_p_STEP), (y * MM_p_STEP)); // round up to 4 digets -> r(10**4)/10**4
+            stepper_driver.printPosToTermial();
             printf("B5: pressed");
             sleep_ms(700);
         }

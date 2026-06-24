@@ -36,7 +36,15 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(motorDriver motorDriver.cpp )
+add_executable(motorDriver 
+    motorDriver.cpp
+    drivers/SwitchButton.cpp
+    drivers/Led.cpp
+    drivers/Stepper.cpp
+    drivers/StepperDriver.cpp
+    drivers/Potentiometer.cpp
+    drivers/HW069.cpp
+)
 
 pico_set_program_name(motorDriver "motorDriver")
 pico_set_program_version(motorDriver "0.1")

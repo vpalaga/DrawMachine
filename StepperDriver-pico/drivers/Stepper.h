@@ -8,7 +8,6 @@ public:
     Stepper(int stepPin_init_, int dirPin_init_);
     void step_firstHalf(bool dir);
     void step_secondHalf();
-
 private:
     int stepPin;
     int dirPin;
