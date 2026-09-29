@@ -1,15 +1,15 @@
 # Draw Machine by VPalaga 
 
-The idea is to create a 2 axis (x, y) robot that can be controlled by the .FCODE protocol. Adding the Z   
-axis shouldn't be very difficult, just raise the frame and move the print plane down. The FCODE is my    
-own simplification of .gcode protocol.  
+The idea is to make a plotter.
 
-**The Goal: 100% working reliable x, y system.** 
+ The FCODE is my own simplification of .gcode protocol. I maight implememnt the .gcode later for the sake of my own sanity, but for now I am working with my own fuck creation - FCODE.
 
->Partially based on Scrabble bot Code.
+**The Goal: 100% working reliable x, y potter to do my homework.** 
+
+>Partially based on Scrabble bot.
 ---
 
-## .FCODE
+## .FCODE (quite old examples, they are not accurate at all <3)
 >**FCODE Generation example in `FCODEgenerator/useExample.py`**  
 
 ``` python
@@ -72,7 +72,7 @@ USB CDC Virtual Serial data exchange, to send `MOVE` coordinates to the pico.
 ``` cpp
 // Pico: client
 while (true) {
-        if (stdio_usb_connected()) {
+        if (stdio_usb_connected(w)) {
             // read a char if available
             int c = getchar_timeout_us(0);
 
@@ -177,31 +177,11 @@ public:
 ---
 
 # Construction
-| Part | Amount  | Function |  Notes |
-| ---- | ------  | -------- | ----- |
-| 2020 500 Aluminium Profile | 3 | the rails for x, y head/ train movement | 2 for y, 1 for x |
-| 3030 250 Aluminium Profile | 4 | construction | |
-| 3030 350 Aluminium Profile | 4 | construction | main cross construction |
-| T8 500 Groove rod | 2 | movement|  |
-||||||
-| PLA fillament| ~2kg | print | not shure about the amount |
-||||||
-| TMC 2209 Stepper Driver | 2 | drive the steppers | one for each |
-| End swich KW12 | 2 | endswiches to calibrate | use terminals 1, 2 (conduct when pressed) |
-| Nema 17 Stepper | 2 | move in the x, y | 17HE08-1004S | 
-||||||
-| 4x13x5mm Beraring | lot | train, head, movement | |
-| 8x22x7mm Beraring | 4 | rod end | for y motor needed one extra for the strart |
-||||||
-| M3 8mm hex bolt| ~150 | mate | not shure about the amount|
-| M3 10mm hex bolt| ~10 | secure the top to the ALU bot | M3 12mm also possible |  
-| M3 12mm hex bolt| ~30 | mate | not shure about the amount|
-| M3 nut | ~80 | mate | not shure about the amount |
-
----
-
+fuck you, find your own parts. I dont care about the nobody reading this to spend my time on this :D
 # Code Documentation
 
+Good luck figuring it out on your own. I have no idea either.
+
 ## Libraries used:
-+ ezdxf: to read .dxf files
-// test of working
+I have no clue. 
+Just go check it lol.
