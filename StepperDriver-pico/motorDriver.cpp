@@ -20,43 +20,14 @@
 #include "drivers/SwitchButton.h"
 #include "drivers/Stepper.h"
 
-
 using namespace std;
-
 
 int64_t alarm_callback(alarm_id_t id, void *user_data) {
     // Put your timeout handler code in here
     return 0;
 }
 
-
-// end swich pins
-// deifne the GPIO ports of the draw swiches terminals
-// both thru swich to GND (pin 33, one above)
-
-
-// us sleep between steps
-
-// LEDs wire to GND (pin 23)
-const int LED_SYSTEM = 25;
-
 const int BUF_MAX_LEN = 128;
-
-
-// PCA9685 I2C0 and SDA, change maybe to consts later
-// I2C defines
-// This example will use I2C0 on GPIO8 (SDA) and GPIO9 (SCL) running at 400KHz.
-// Pins can be changed, see the GPIO function select table in the datasheet for information on GPIO assignments
-#define I2C_PORT i2c0
-#define I2C_SDA 8
-#define I2C_SCL 9
-#define PCA9685_ADDR 0x40
-
-#define MODE1 0x00
-#define PRESCALE 0xFE
-#define LED0_ON_L 0x06
-
-// CDC buffer max len, removed static date: 16.2.26
 
 uint8_t consoleEnabled = 2; // 2 for unassigned 1 true 0 false
 
@@ -84,8 +55,7 @@ SwitchButton xSwich(11);
 SwitchButton ySwich(7);
 SwitchButton zSwich(2); 
 
-
-// instruction led, when doing instruction than, on
+// leds
 Led instructionLed(15);
 Led ledConsoleMode(14);
 
@@ -98,6 +68,7 @@ struct Settings {
     const uint16_t z_stepper_us_sleep = 50; 
     const int pen_up_down_steps = 300; // needs to be tested 
     const int INSTRUCION_TIMEOUT_MS = 3000; 
+    const uint16_t x_y_halfcycle_us_sleep = 50;
 }settings;
 
 
@@ -110,6 +81,7 @@ void z_stepper_calibrate(){
         // move into z+ direction
         z_stepper.move(1, settings.z_stepper_us_sleep); // move one step x back (-)
     }
+    stepper_driver.is_pen_down = false;
 }
 
 class Instructions{
@@ -153,7 +125,7 @@ public:
     }
 
     static bool pen_up(){
-        
+        // check last known pen pos
         if (!stepper_driver.is_pen_down){return true;}
 
         // move +z direction
@@ -164,7 +136,7 @@ public:
     }
     
     static bool pen_down(){
-
+        // check last known pen pos
         if (stepper_driver.is_pen_down){return true;}
 
         // move -z direction
@@ -358,7 +330,6 @@ void manual_instruction(){
     return;
 }
 
-
 // main functions:
 
 bool CDC_loop(){
@@ -393,12 +364,13 @@ bool CDC_loop(){
     return false;
 }
 
-
 int time_from_last_inst;
 
 int main()
 {
     stdio_init_all();
+    // set to thing in settings
+    stepper_driver.motor_sleep_us = settings.x_y_halfcycle_us_sleep;
 
     while (true) { // CDC loop
         

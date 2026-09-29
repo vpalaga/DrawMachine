@@ -4,8 +4,8 @@
 #include "Stepper.h"
 class StepperDriver {
 public:
-    int motor_sleep_us = 50;
-
+    int motor_sleep_us;
+    
     bool x_dir;
     bool y_dir;
 
