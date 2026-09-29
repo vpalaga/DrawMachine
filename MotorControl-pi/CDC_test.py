@@ -23,7 +23,7 @@ try:
         print("receive " + str(receive_response))
 
         finish_state = transmitter.send_and_receive(None)
-        print("finish " + str(finish_state) + " program time: " + str(round((time.time() - start_time), ndigits=5)) + " miliseconds")
+        print("finish " + str(finish_state) + " program time: " + str(round((time.time() - start_time), ndigits=5)) + " milliseconds")
 
 finally:
     transmitter.__deinit__()

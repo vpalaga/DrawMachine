@@ -3,15 +3,14 @@
 #include <stdio.h>
 #include <cmath>
 
-StepperDriver::StepperDriver(int x_stp,int x_dir,int y_stp,int y_dir)
-
-    : xStepperMotor(x_stp, x_dir),
-      yStepperMotor(y_stp, y_dir) {
+StepperDriver::StepperDriver(Stepper::stepper_pins pins_x, Stepper::stepper_pins pins_y)
+        : xStepperMotor(pins_x),
+          yStepperMotor(pins_y) {
     const int STEPS_P_ROT = 1000;
-    const int ROD_PICH_mm = 2;
+    const int ROD_PITCH_mm = 2;
 
     const int USE_SPROFILE_FROM_STEPS = 200;
-    const int STEPS_P_1MM = STEPS_P_ROT / ROD_PICH_mm;
+    const int STEPS_P_1MM = STEPS_P_ROT / ROD_PITCH_mm;
     const double MM_p_STEP = (double)1 / STEPS_P_1MM;
 };
 void StepperDriver::move(int x, int y){
@@ -77,6 +76,5 @@ void StepperDriver::pos_reset(){
 };
 
 void StepperDriver::printPosToTermial(){
-    
     printf("head pos: X: %.4fmm, Y: %.4fmm \n", (x_pos * MM_p_STEP), (y_pos * MM_p_STEP)); // round up to 4 digets -> r(10**4)/10**4
 };

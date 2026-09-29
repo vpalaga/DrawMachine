@@ -3,8 +3,8 @@ from CDC_send import Transmitter, t
 import settings
 
 class MotorOutOfRangeError(Exception):#
-    def __init__(self, message):
-        self.message = message
+    def __init__(self, motor:StepperMotor, difference:float|int):
+        self.message = f"{motor.name} out of range: from'{motor.pos_mm}' to '{motor.pos_mm+difference}"
         super().__init__(self.message)
 
 class MotorController:
@@ -56,7 +56,7 @@ class MotorController:
             x_steps = round(self.x_motor.steps_p_mm * (self.x_motor.pos_mm - x_motor_move_starting_mmpos)) # 10mm*1800steps = 18000 steps
 
         else:
-            raise MotorOutOfRangeError("position: motor X: "  + str(self.x_motor.pos_mm + x))
+            raise MotorOutOfRangeError(self.x_motor, x)
         # check y pos
 
         if self.y_motor.check_pos(y):
@@ -69,7 +69,7 @@ class MotorController:
             y_steps = round(self.y_motor.steps_p_mm * (self.y_motor.pos_mm - y_motor_move_starting_mmpos)) # 10mm*1800steps = 18000 steps
 
         else:
-            raise MotorOutOfRangeError("position: motor Y: "  + str(self.y_motor.pos_mm + y))
+            raise MotorOutOfRangeError(self.y_motor, y)
 
         # x or y may be undefined, but if they are, Motor error will be raised
         

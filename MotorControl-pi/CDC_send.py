@@ -33,13 +33,6 @@ class ConsoleError(Exception):
 # on Linux it might be "/dev/ttyACM0" or similar
 # on Windows something like "COM3"
 
-def r(m:bool|str)->str:
-    if isinstance(m, bool):
-        if not m:
-            return "OK"
-        return "ERROR"
-    return m
-
 def find_pico_serial_port():
     print("searching for pico...")
     for port in serial.tools.list_ports.comports():
@@ -66,13 +59,13 @@ class Transmitter:
         print(f"OK: successfully connected")
         # set pico console mode
         pico_receive = self.send_and_receive("SCM " + str(int(console)) + '\n')
-        print(f"OK: pico consoleMode: {console}, returned: {r(pico_receive)}")
+        print(f"OK: pico consoleMode: {console}, returned: {pico_receive}")
 
         # wait for response
         pico_finish = self.send_and_receive(None)
-        print(f"OK: pico consoleMode: {console}, finished: {r(pico_finish)}")
+        print(f"OK: pico consoleMode: {console}, finished: {pico_finish}")
 
-    def send_and_receive(self, message:str|None) -> bool|str: 
+    def send_and_receive(self, message:str|None) -> int|str:
         """
         0 = all good;
         1 = error;
@@ -102,16 +95,14 @@ class Transmitter:
                 if not s.SPEED_MODE: # check whether the response can be converted to a bool
                     if not response.isdigit():
                         raise ReturnError("response: '" + response + "' is not a integer")
-                    
                     else:
                         int_response = int(response)
                         if not int_response in [0, 1]:
                             raise ReturnError("response: '" + str(int_response) + "' is not between 0 and 1 -> can't be converted to bool")
-                        
                         else:
-                            return bool(int_response)
+                            return int_response
                 
-                return bool(int(response))
+                return int(response)
             
             if time.time() - start_time >= Transmitter.RESPONSE_TIMEOUT_S:
                 raise PicoTimeoutError("response not received in last " + str(Transmitter.RESPONSE_TIMEOUT_S) + " s")
@@ -127,7 +118,6 @@ class Transmitter:
         while True:
             pico_ret = self.send_and_receive(None) 
             print(str(t()) + ": " + str(pico_ret))
-
 
     def __deinit__(self):
         print(f"OK: closing serial port: {Transmitter.SERIAL_PORT}")

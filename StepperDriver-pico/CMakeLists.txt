@@ -42,7 +42,6 @@ add_executable(motorDriver
     drivers/Led.cpp
     drivers/Stepper.cpp
     drivers/StepperDriver.cpp
-    drivers/Potentiometer.cpp
     drivers/HW069.cpp
 )
 

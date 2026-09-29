@@ -1,7 +1,7 @@
 class StepperMotor:
     #CONSTATS
     ROTATION_P_MM = 0.5  # pitch=2mm -> 1/2
-    TMC_MICO_STEPPING = 11
+    TMC_MICO_STEPPING = 8
     STEPPER_STEPS = 200
     # 2mm * x = Rot / mm
     STEPS_P_ROTATION = TMC_MICO_STEPPING * STEPPER_STEPS  # Step=1.8, when 0.9->400
@@ -13,7 +13,7 @@ class StepperMotor:
         self.max_pos_mm = max_pos_mm # set
 
         # add stuff to self.reset()
-        self.pos_mm = 0. # float
+        self.pos_mm = 0.0 # float
 
 
     def __values__(self):

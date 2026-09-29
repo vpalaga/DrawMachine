@@ -15,7 +15,6 @@
 
 #include "algorithm"
 
-#include "drivers/HW069.h"
 #include "drivers/Led.h"
 #include "drivers/StepperDriver.h" 
 #include "drivers/SwitchButton.h"
@@ -66,58 +65,74 @@ const map<string, int> INSTRUCTION_SIZES = {
     {"MOV", 2},// xsteps ysteps
     {"CLB", 0},// 
     {"WAT", 1},// seconds
-    {"SCA", 2}, // channel, angle
+    {"PUP", 0}, // 
+    {"PDN", 0}, // 
     {"SCM", 1} // mode (0,1,2)
 };
 //=============================================================
 
-// display object
-HW069 display(14, 15);
-
 // manual control swiches
-SwitchButton mSwich_XP(5);
-SwitchButton mSwich_XM(4);
-SwitchButton mSwich_YP(3);
-SwitchButton mSwich_YM(2);
-
-SwitchButton mSwich_B1(6);
-SwitchButton mSwich_B2(7);
-
-// instruction led, when doing instruction than, on
-Led instructionLed(28);
-Led ledConsoleMode(17);
-Led onLed(16);
-
-// driver: xstp xdir ystp ydir
-StepperDriver stepper_driver(19, 18, 21, 20);
+SwitchButton mSwich_XP(22);
+SwitchButton mSwich_XM(21);
+SwitchButton mSwich_YP(20);
+SwitchButton mSwich_YM(19);
+SwitchButton mSwich_B1(18);
+SwitchButton mSwich_B2(17);
 
 // end swiches, use with calibrate
-SwitchButton xSwich(26); // GPIo 26
-SwitchButton ySwich(27); // GPIO 27
+SwitchButton xSwich(11);
+SwitchButton ySwich(7);
+SwitchButton zSwich(2); 
+
+
+// instruction led, when doing instruction than, on
+Led instructionLed(15);
+Led ledConsoleMode(14);
+
+// driver: xstp xdir ystp ydir
+Stepper::stepper_pins x_stepper_pins = {4, 3, 5};
+Stepper::stepper_pins y_stepper_pins = {8, 6, 9};
+Stepper::stepper_pins z_stepper_pins = {13, 12, 10};
+
+struct Settings {
+    const uint16_t z_stepper_us_sleep = 50; 
+    const int pen_up_down_steps = 300; // needs to be tested 
+}settings;
+
+
+StepperDriver stepper_driver(x_stepper_pins, x_stepper_pins);
+Stepper z_stepper(z_stepper_pins);
+
+void z_stepper_calibrate(){
+    while (!zSwich.getSwichState()){ // dosnt conduct
+        // i dont think a sleep is needed here, since 900 steps = 1mm move, so should be more than enough time to stop
+        // move into z+ direction
+        z_stepper.move(1, settings.z_stepper_us_sleep); // move one step x back (-)
+    }
+}
+
+
+
+
 
 
 class Instructions{
 public:
     static bool wait(float seconds){
-        display.display_text("WAIT");
 
-        sleep_ms(seconds*1000); // make into seconds
+        sleep_ms(seconds*1000); // make into mini seconds
 
-        display.display_text("----");
         return false;
     }
 
     static bool move(int x, int y){
-        display.display_text("MOVE");
 
         stepper_driver.move(x, y);
-
-        display.display_text("----");
+        
         return false; // move 
     }
 
     static bool calibrate(){
-        display.display_text("CALB");
 
         while ((!xSwich.getSwichState()) && (!ySwich.getSwichState())){ // dosnt conduct
             // i dont think a sleep is needed here, since 900 steps = 1mm move, so should be more than enough time to stop
@@ -131,22 +146,37 @@ public:
             // i dont think a sleep is needed here, since 900 steps = 1mm move, so should be more than enough time to stop
             stepper_driver.move(0, -1); // move one step x back (-)
         }
-
         // reset stepper pos
         stepper_driver.pos_reset();
 
-        display.display_text("----");
+        // z calib
+        z_stepper_calibrate();
+
         return false; // calibrate 
     }
 
-    static bool servo_angle(uint8_t channel, float angle){
-        display.display_text("SANG");
+    static bool pen_up(){
+        
+        if (!stepper_driver.is_pen_down){return true;}
 
-        // DOOOOOO this to move the pen up
+        // move +z direction
+        z_stepper.move(settings.pen_up_down_steps, settings.z_stepper_us_sleep);
+        stepper_driver.is_pen_down = false;
 
-        display.display_text("----");
         return false;
     }
+    
+    static bool pen_down(){
+
+        if (stepper_driver.is_pen_down){return true;}
+
+        // move -z direction
+        z_stepper.move(- settings.pen_up_down_steps, settings.z_stepper_us_sleep);
+        stepper_driver.is_pen_down = true;
+
+        return false;
+    }
+
     static bool set_instruction_mode(uint8_t mode){
         consoleEnabled = mode;
         return false;
@@ -254,10 +284,13 @@ void process_received(const string buf, int len) {
         // wait x seconds
         instructionFinished = Instructions::wait(instructionArgunments[0]);
 
-    } else if (instructionType=="SCA"){
+    } else if (instructionType=="PUP"){
         // channel, angle
-        instructionFinished = Instructions::servo_angle((uint8_t)instructionArgunments[0],instructionArgunments[1]);
-        ;
+        instructionFinished = Instructions::pen_up();
+    } else if (instructionType=="PDN"){
+        // channel, angle
+        instructionFinished = Instructions::pen_down();  
+    
     } else if (instructionType=="SCM"){
         // mode
         instructionFinished = Instructions::set_instruction_mode((uint8_t)instructionArgunments[0]);
@@ -283,7 +316,10 @@ void manual_instruction(){
     if(mSwich_XM.getSwichState()){
         x_move--;
         if(consoleEnabled == 1){
-            printf("B2 (xm): pressed");
+            printf("B2 (xm): pressed\n");
+            printf("x: %d\n", xSwich.getSwichState());
+            printf("y: %d\n", ySwich.getSwichState());
+            sleep_ms(20);
         }    
     }
 
@@ -324,6 +360,7 @@ void manual_instruction(){
     return;
 }
 
+
 // main functions:
 
 bool CDC_loop(){
@@ -363,22 +400,7 @@ int time_from_last_inst;
 
 int main()
 {
-    if (true){ // for editor, can be hidden
-    
     stdio_init_all();
-
-
-    // Timer example code - This example fires off the callback after 2000ms
-    add_alarm_in_ms(2000, alarm_callback, NULL, false);
-    // For more examples of timer use see https://github.com/raspberrypi/pico-examples/tree/master/timer
-
-    //printf("System Clock Frequency is %d Hz\n", clock_get_hz(clk_sys));
-    //printf("USB Clock Frequency is %d Hz\n", clock_get_hz(clk_usb));
-    // For more examples of clocks use see https://github.com/raspberrypi/pico-examples/tree/master/clocks
-    }
-    
-    onLed.setState(true);
-    display.display_text("8-- ");
 
     while (true) { // CDC loop
         
