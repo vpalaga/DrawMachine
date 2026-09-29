@@ -71,6 +71,11 @@ void StepperDriver::bresenham(Stepper leadStepper, Stepper followStepper, int le
     return;
 }
 
+void StepperDriver::enable(bool setState){
+    xStepperMotor.enable(setState);
+    yStepperMotor.enable(setState);
+}
+
 void StepperDriver::pos_reset(){
     x_pos = y_pos = 0;
 };

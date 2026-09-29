@@ -6,16 +6,13 @@ class StepperDriver {
 public:
     int motor_sleep_us = 50;
 
-    bool x_dir = true;
-    bool y_dir = true;
-
-    bool x_enabled = true;
-    bool y_enabled = true;
+    bool x_dir;
+    bool y_dir;
 
     StepperDriver(Stepper::stepper_pins pins_x, Stepper::stepper_pins pins_y);
     void move(int x, int y);
     void bresenham(Stepper leadStepper, Stepper followStepper, int lead, int follow, bool leadDir, bool followDir);
-
+    void enable(bool setState);
     void pos_reset();
     void printPosToTermial();
 

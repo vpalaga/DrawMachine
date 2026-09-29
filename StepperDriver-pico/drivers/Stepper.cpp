@@ -34,7 +34,7 @@ void Stepper::step_secondHalf(){
 
 void Stepper::enable(bool setState){
     enabled = setState;
-    gpio_put(pins.enPin, setState ? 0 : 1);
+    gpio_put(pins.enPin, setState ? 1 : 0);
 }
 
 void Stepper::move(int steps, int sleep){

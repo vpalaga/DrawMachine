@@ -41,7 +41,7 @@ int64_t alarm_callback(alarm_id_t id, void *user_data) {
 const int LED_SYSTEM = 25;
 
 const int BUF_MAX_LEN = 128;
-const int INSTRUCION_TIMEOUT_MS = 3000; 
+
 
 // PCA9685 I2C0 and SDA, change maybe to consts later
 // I2C defines
@@ -97,6 +97,7 @@ Stepper::stepper_pins z_stepper_pins = {13, 12, 10};
 struct Settings {
     const uint16_t z_stepper_us_sleep = 50; 
     const int pen_up_down_steps = 300; // needs to be tested 
+    const int INSTRUCION_TIMEOUT_MS = 3000; 
 }settings;
 
 
@@ -111,11 +112,6 @@ void z_stepper_calibrate(){
     }
 }
 
-
-
-
-
-
 class Instructions{
 public:
     static bool wait(float seconds){
@@ -127,6 +123,7 @@ public:
 
     static bool move(int x, int y){
 
+        stepper_driver.enable(true);
         stepper_driver.move(x, y);
         
         return false; // move 
@@ -271,7 +268,6 @@ void process_received(const string buf, int len) {
     // paths to different instructions
     bool instructionFinished;
     
-    
     if          (instructionType=="MOV"){
     
         instructionFinished = Instructions::move(instructionArgunments[0], instructionArgunments[1]);
@@ -337,7 +333,6 @@ void manual_instruction(){
         }    
     }
 
-    // undefined
     if(mSwich_B1.getSwichState()){ // print head position
         if (consoleEnabled == 1){
             stepper_driver.printPosToTermial();
@@ -354,7 +349,10 @@ void manual_instruction(){
 
     // move the motors if needed
     if (x_move != 0 || y_move != 0){
+        stepper_driver.enable(true);
         stepper_driver.move(x_move, y_move);
+        stepper_driver.enable(false);
+        
     }
 
     return;
@@ -408,11 +406,14 @@ int main()
         
         sleep_ms(1); // bottle neck, ignore for now
 
-        if (time_from_last_inst > INSTRUCION_TIMEOUT_MS){
+        if (time_from_last_inst > settings.INSTRUCION_TIMEOUT_MS){
             // enable manual control
             instructionLed.setState(false);
+            stepper_driver.enable(false);
+
             manual_instruction();
-        }
+
+        } 
         
         // reset instruction led after reciving an istructon
         if (time_from_last_inst == 0){instructionLed.setState(true);}
