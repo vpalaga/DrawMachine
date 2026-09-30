@@ -104,14 +104,14 @@ class MotorController:
     @RequestReport
     def penUp(self):
         if not settings.TEST_MODE:
-            receive_state = self.transmitter.send_and_receive("SCA 0 30P\n")
+            receive_state = self.transmitter.send_and_receive("PUP\n")
             finish_state = self.transmitter.send_and_receive(None) # wait for finish
             RequestFailCheck(receive_state, finish_state)
 
     @RequestReport
     def penDown(self):
         if not settings.TEST_MODE:
-            receive_state = self.transmitter.send_and_receive("SCA 0 0\n")
+            receive_state = self.transmitter.send_and_receive("PDN\n")
             finish_state = self.transmitter.send_and_receive(None) # wait for finish
             RequestFailCheck(receive_state, finish_state)
 
