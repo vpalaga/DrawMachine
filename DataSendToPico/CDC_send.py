@@ -3,11 +3,6 @@ import serial.tools.list_ports
 import time
 import settings as s
 
-def t():
-    """time """
-    return time.strftime("%H:%M:%S", 
-             time.gmtime(time.time()))
-
 
 class FormatError(Exception):
     def __init__(self, message):

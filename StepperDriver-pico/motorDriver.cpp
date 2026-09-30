@@ -204,9 +204,6 @@ void waitForCDC(){
     }
 }
 
-string instructionType;
-vector<float> instructionArgunments;
-
 void process_received(const string buf, int len) {
     // return false (0): the message is OK 
     // return true  (1): the message is unsable
@@ -215,8 +212,8 @@ void process_received(const string buf, int len) {
 
     auto instructionDetails = get_instruction_details(buf);
 
-    instructionType         = instructionDetails.first;
-    instructionArgunments   = instructionDetails.second;
+    string instructionType = instructionDetails.first;
+    vector<float> instructionArgunments = instructionDetails.second;
     
     // check instruction usability
     
@@ -238,7 +235,7 @@ void process_received(const string buf, int len) {
     if (recivedMessageState) return; // an error has happened
 
     // paths to different instructions
-    bool instructionFinished;
+    bool instructionFinished = true;
     
     if          (instructionType=="MOV"){
     
@@ -262,7 +259,6 @@ void process_received(const string buf, int len) {
     } else if (instructionType=="SCM"){
         // mode
         instructionFinished = Instructions::set_instruction_mode((uint8_t)instructionArgunments[0]);
-        ;
     }
 
 

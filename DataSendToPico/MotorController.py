@@ -1,5 +1,6 @@
 from MotorOverclass import StepperMotor
-from CDC_send import Transmitter, t
+from CDC_send import Transmitter
+from idkfornow import RequestReport, RequestFailCheck
 import settings
 
 class MotorOutOfRangeError(Exception):#
@@ -75,27 +76,21 @@ class MotorController:
         
         self.step_move(x=x_steps, y=y_steps)
 
+    @RequestReport
     def step_move(self, x:int, y:int)->None:
-        print(f"{t()}: requesting: Move, steps: x: {x} y: {y} estimated time: {max(x, y)/5000}s")
-
         if not settings.TEST_MODE:
-
             receive_state = self.transmitter.send_and_receive("MOV " + str(x) + " " + str(y) + "\n")
-            print(f"{t()}: Move: {receive_state=}")
-
             finish_state = self.transmitter.send_and_receive(None) # wait for finish
-            print(f"{t()}: Move: {finish_state=}\n")
+            RequestFailCheck(receive_state, finish_state)
 
+    @RequestReport
     def calibrate(self)->None:
         # send calibrate instruction
-        print(f"{t()}: requesting: Calibrate")
 
         if not settings.TEST_MODE:
             receive_state = self.transmitter.send_and_receive("CLB\n")
-            print(f"{t()}: Calibrate: {receive_state=}")
-
             finish_state = self.transmitter.send_and_receive(None) # wait for finish
-            print(f"{t()}: Calibrate: {finish_state=}\n")
+            RequestFailCheck(receive_state, finish_state)
 
             # move to starting offset
             self.move_to_mm(*MotorController.starting_offsets_user_presets["A4"])
@@ -106,39 +101,22 @@ class MotorController:
 
         #reset the servo as well?
 
+    @RequestReport
     def penUp(self):
-
-        print(f"{t()}: requesting: penUp")
-        
         if not settings.TEST_MODE:
             receive_state = self.transmitter.send_and_receive("SCA 0 30P\n")
-            print(f"{t()}: penUp: {receive_state=}")
-
             finish_state = self.transmitter.send_and_receive(None) # wait for finish
-            print(f"{t()}: penUp: {finish_state=}\n")
+            RequestFailCheck(receive_state, finish_state)
 
+    @RequestReport
     def penDown(self):
-
-        print(f"{t()}: requesting: penDown")
-        
         if not settings.TEST_MODE:
             receive_state = self.transmitter.send_and_receive("SCA 0 0\n")
-            print(f"{t()}: penDown ret: {receive_state=}")
-
             finish_state = self.transmitter.send_and_receive(None) # wait for finish
-            print(f"{t()}: penDown: {finish_state=}\n")
+            RequestFailCheck(receive_state, finish_state)
 
+    @RequestReport
     def wait(self, secs):
-        print(f"{t()}: requesting: wait")
-        
         receive_state = self.transmitter.send_and_receive("WAT " + secs + "\n")
-        print(f"{t()}: wait ret: {receive_state=}")
-
         finish_state = self.transmitter.send_and_receive(None) # wait for finish
-        print(f"{t()}: wait: {finish_state=}\n")
-            
-if __name__ == "__main__":
-    t = MotorController()
-    while True:
-        m = input("M:").strip()
-        eval(m)
+        RequestFailCheck(receive_state, finish_state)
