@@ -1,30 +1,48 @@
+from __future__ import annotations
+
 import math
+from typing import ClassVar
+
 
 class Instruction:
-    instructions_parameters_len = { # check if the parameters are correct
+    # instruction name -> number of expected parameters
+    instructions_parameters_len: ClassVar[dict[str, int]] = {
         "MOV": 2,
         "PUP": 0,
         "PDN": 0,
         "WAT": 1,
-        "CLB": 0}
+        "CLB": 0,
+    }
 
-    def __init__(self, i_type:str, *args:int|float, acc=0.01):
-        self.i_type = i_type.upper()  # instruction type
+    def __init__(self, i_type: str, *args: float, acc: float = 0.01) -> None:
+        if acc <= 0:
+            raise ValueError("acc must be > 0")
 
-        self.round_up_to = round(-math.log(acc, 10)) # ndigits from decimals 0.001 -> 3
-        self.parameters = [float(round(p, ndigits=self.round_up_to)) for p in args] # instructions parameters turn into floats
+        self.i_type: str = i_type.upper()  # instruction type
 
-        # handle warnings and formating Errors
-        if self.i_type not in Instruction.instructions_parameters_len.keys(): # check if the instruction is known
-            raise Warning("instruction: " + self.i_type + " is unknown")
+        # check if the instruction is known and has the right amount of parameters
+        if self.i_type not in Instruction.instructions_parameters_len:
+            raise ValueError(f"instruction: {self.i_type} is unknown")
 
-        if len(self.parameters) != Instruction.instructions_parameters_len[self.i_type]: # check if the right amount of parameters provided
-            raise ValueError("for instruction: " + self.i_type +
-                             " parameters: "  + str(self.parameters) +
-                             " don't match expected length: " + str(Instruction.instructions_parameters_len[self.i_type]))
+        expected = Instruction.instructions_parameters_len[self.i_type]
+        if len(args) != expected:
+            raise ValueError(
+                f"for instruction: {self.i_type} parameters: {list(args)} "
+                f"don't match expected length: {expected}"
+            )
 
-    def self_str(self): # return string ready for FCODE file writing
-        return self.i_type + " " + str(self.parameters).strip("[]").replace(",","")
+        # number of decimals to keep: 0.001 -> 3
+        self.round_up_to: int = round(-math.log10(acc))
+
+        # parameters as floats; "+ 0.0" turns -0.0 into 0.0
+        self.parameters: list[float] = [
+            round(float(p), self.round_up_to) + 0.0 for p in args
+        ]
+
+    def self_str(self) -> str:
+        """String ready for FCODE file writing, e.g. 'MOV 20.05 25.0'."""
+        return f"{self.i_type} {' '.join(str(p) for p in self.parameters)}"
+
 
 if __name__ == "__main__":
-    print(Instruction( "ove", 20.05, 25).self_str())
+    print(Instruction("mov", 20.05, 25).self_str())

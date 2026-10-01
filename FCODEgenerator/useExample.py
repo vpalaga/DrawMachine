@@ -1,10 +1,13 @@
 from main import FGenerator
 
-# create a generating object
-gen = FGenerator(r'C:\Users\vit\OneDrive\Documents\GitHub\DrawMachine\FCODEgenerator\dxfexamples\Drawing 1.dxf',
-                 acc=.1, vis_scale=10, text=False)
+DXF_PATH = r"C:\Users\vit\OneDrive\Documents\GitHub\DrawMachine\FCODEgenerator\dxfexamples\Drawing 2A4.dxf"
 
-# generate the FCODE from the provided dxf file
-gen.generate_instructions()
- # the save format / location can be configured under gen.py method: save()
-gen.save()
+if __name__ == "__main__":
+    # create a generating object (optimize=True reorders paths to minimize pen travel)
+    gen = FGenerator(DXF_PATH, acc=0.1, vis_scale=10, text=True, optimize=True)
+
+    # generate the FCODE from the provided dxf file
+    gen.generate_instructions()
+
+    # writes '<name>.FCODE' to the working directory; pass output_path="..." to change that
+    gen.save(show_visualization=True)
