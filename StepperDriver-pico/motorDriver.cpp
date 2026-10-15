@@ -76,12 +76,20 @@ StepperDriver stepper_driver(x_stepper_pins, x_stepper_pins);
 Stepper z_stepper(z_stepper_pins);
 
 void z_stepper_calibrate(){
+    //enable the motor
+    z_stepper.enable(true);
+    //if the head is already in switch conduct position, move down 
+    while (zSwich.getSwichState()){
+        z_stepper.move(1, settings.z_stepper_us_sleep); // move one step z down (z-)
+    }
+
     while (!zSwich.getSwichState()){ // dosnt conduct
         // i dont think a sleep is needed here, since 900 steps = 1mm move, so should be more than enough time to stop
         // move into z+ direction
-        z_stepper.move(1, settings.z_stepper_us_sleep); // move one step x back (-)
+        z_stepper.move(1, settings.z_stepper_us_sleep); // move one step z up (z+)
     }
     stepper_driver.is_pen_down = false;
+    z_stepper.enable(false); // disenable
 }
 
 class Instructions{
@@ -95,7 +103,6 @@ public:
 
     static bool move(int x, int y){
 
-        stepper_driver.enable(true);
         stepper_driver.move(x, y);
         
         return false; // move 
@@ -209,7 +216,6 @@ void process_received(const string buf, int len) {
     // return true  (1): the message is unsable
     // handle complete message (null-terminated)
     
-
     auto instructionDetails = get_instruction_details(buf);
 
     string instructionType = instructionDetails.first;
@@ -317,10 +323,7 @@ void manual_instruction(){
 
     // move the motors if needed
     if (x_move != 0 || y_move != 0){
-        stepper_driver.enable(true);
         stepper_driver.move(x_move, y_move);
-        stepper_driver.enable(false);
-        
     }
 
     return;
@@ -380,7 +383,6 @@ int main()
             stepper_driver.enable(false);
 
             manual_instruction();
-
         } 
         
         // reset instruction led after reciving an istructon

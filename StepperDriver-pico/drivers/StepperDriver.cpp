@@ -24,12 +24,18 @@ void StepperDriver::move(int x, int y){
 
     // set both to positive
     x = abs(x); y = abs(y);
+    
+    // enable the motors
+    enable(true);
 
     if (x >= y){ // x = lead
         bresenham(xStepperMotor, yStepperMotor, x, y, x_dir, y_dir);    
     } else {
         bresenham(yStepperMotor, xStepperMotor, y, x, y_dir, x_dir);
     }
+
+    enable(false); // disenable
+
     return;
 };
 

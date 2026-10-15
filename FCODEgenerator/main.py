@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Iterable
 from pathlib import Path
 
 from dxfReader import Reader
@@ -14,9 +15,21 @@ Polyline = list[Point]
 
 
 class FGenerator:
+    """Builds an FCODE file (plus a preview) either from a DXF or by hand.
+
+    * ``FGenerator("drawing.dxf")``  -> polylines are read from the DXF; call
+      ``generate_instructions()`` to turn them into FCODE.
+    * ``FGenerator("my_fcode_name")`` -> no DXF is read, the polylines stay
+      empty and you drive the pen yourself with ``pen_up``, ``pen_down``,
+      ``move_to``, ``travel_to``, ``draw_to``, ``draw_polyline`` and ``wait``.
+
+    A source counts as a DXF when it ends in ``.dxf``; anything else is used as
+    the name of the future FCODE file.
+    """
+
     def __init__(
         self,
-        path_to_dxf: str | Path,
+        source: str | Path,
         acc: float = 0.1,
         vis_scale: float = 10.0,
         text: bool = True,
@@ -25,23 +38,35 @@ class FGenerator:
         center: bool = True,
         join_tol: float = 1e-4,
     ) -> None:
-        self.name: str = Path(path_to_dxf).stem
+        source_str = str(source)
+        self.from_dxf: bool = Path(source_str).suffix.lower() == ".dxf"
+
+        if self.from_dxf:
+            self.name: str = Path(source_str).stem
+        else:
+            name = source_str
+            if name.lower().endswith(".fcode"):
+                name = name[: -len(".fcode")]
+            self.name = name
         print(f"name: {self.name}")
 
         self.acc: float = acc
         self.paper_format: str = paper_format
-        self.join_tol: float = join_tol  # max gap at which two polylines count as connected
+        self.join_tol: float = join_tol  # max gap at which two points count as the same
+        self._plane: tuple[float, float] = paper_size(paper_format)
 
         self.file = FCODE(size=paper_format, name=self.name)
-        self.reader = Reader(name=str(path_to_dxf), acc=acc, text=text)
 
-        # Each polyline is a list of (x, y) points; single points draw nothing.
-        self.polylines: list[Polyline] = [
-            pl for pl in self.reader.read() if len(pl) >= 2
-        ]
-        if center:
-            self.center_on_paper()
-        self._warn_if_off_paper()
+        # Each polyline is a list of (x, y) points. Stays empty in manual mode.
+        self.reader: Reader | None = None
+        self.polylines: list[Polyline] = []
+
+        if self.from_dxf:
+            self.reader = Reader(name=source_str, acc=acc, text=text)
+            self.polylines = [pl for pl in self.reader.read() if len(pl) >= 2]
+            if center:
+                self.center_on_paper()
+            self._warn_if_off_paper()
 
         # The preview canvas is sized from the drawing, so nothing gets cut off
         self.vis = Visual(paper_format, scale=vis_scale, bounds=self._bounds())
@@ -49,9 +74,22 @@ class FGenerator:
         # Current machine state
         self._pos: Point = (self.vis.nozzle_x, self.vis.nozzle_y)
         self._pen_is_down: bool = False
+        self._warned_off_plane: bool = False
 
-        if optimize:
+        if self.from_dxf and optimize:
             self.optimize()
+
+    # ----------------------------------------------
+    # State
+    # ----------------------------------------------
+
+    @property
+    def position(self) -> Point:
+        return self._pos
+
+    @property
+    def pen_is_down(self) -> bool:
+        return self._pen_is_down
 
     # ----------------------------------------------
     # Placement
@@ -68,7 +106,7 @@ class FGenerator:
             return
 
         min_x, min_y, max_x, max_y = bounds
-        width, height = paper_size(self.paper_format)
+        width, height = self._plane
 
         dx = width / 2 - (min_x + max_x) / 2
         dy = height / 2 - (min_y + max_y) / 2
@@ -95,12 +133,22 @@ class FGenerator:
             return
 
         min_x, min_y, max_x, max_y = bounds
-        width, height = paper_size(self.paper_format)
+        width, height = self._plane
 
         if min_x < 0 or min_y < 0 or max_x > width or max_y > height:
             print(
                 f"warning: drawing bounds x[{min_x:.1f}, {max_x:.1f}] "
                 f"y[{min_y:.1f}, {max_y:.1f}] exceed the "
+                f"{self.paper_format} plane ({width} x {height} mm)"
+            )
+
+    def _warn_if_off_plane(self, x: float, y: float) -> None:
+        """Warn (once) when a manual move leaves the paper plane."""
+        width, height = self._plane
+        if not self._warned_off_plane and not (0 <= x <= width and 0 <= y <= height):
+            self._warned_off_plane = True
+            print(
+                f"warning: move to ({x:.1f}, {y:.1f}) is outside the "
                 f"{self.paper_format} plane ({width} x {height} mm)"
             )
 
@@ -118,25 +166,57 @@ class FGenerator:
         print(f"pen travel: {before:.1f} -> {after:.1f} ({saved:.0f}% less)")
 
     # ----------------------------------------------
-    # Low-level pen commands (keep the file and the preview in sync)
+    # Manual commands (file and preview stay in sync)
     # ----------------------------------------------
 
-    def _pen_up(self) -> None:
+    def pen_up(self) -> None:
+        """Lift the pen (does nothing if it is already up)."""
         if self._pen_is_down:
             self.vis.penup()
             self.file.add_instruction(Instruction("PUP"))
             self._pen_is_down = False
 
-    def _pen_down(self) -> None:
+    def pen_down(self) -> None:
+        """Lower the pen (does nothing if it is already down)."""
         if not self._pen_is_down:
             self.vis.pendown()
             self.file.add_instruction(Instruction("PDN"))
             self._pen_is_down = True
 
-    def _move_to(self, x: float, y: float) -> None:
+    def move_to(self, x: float, y: float) -> None:
+        """Move to (x, y) in the current pen state: draws if the pen is down."""
+        self._warn_if_off_plane(x, y)
         self.file.add_instruction(Instruction("MOV", x, y))
         self.vis.move(x, y)
         self._pos = (x, y)
+
+    def travel_to(self, x: float, y: float) -> None:
+        """Lift the pen and move to (x, y) without drawing."""
+        self.pen_up()
+        self.move_to(x, y)
+
+    def draw_to(self, x: float, y: float) -> None:
+        """Lower the pen and draw a line to (x, y)."""
+        self.pen_down()
+        self.move_to(x, y)
+
+    def draw_polyline(self, points: Iterable[Point]) -> None:
+        """Draw through the given points. The pen only lifts and travels to the
+        first point if it is not already there."""
+        pts = list(points)
+        if not pts:
+            return
+
+        if not self._is_at(pts[0]):
+            self.travel_to(*pts[0])
+
+        self.pen_down()
+        for x, y in pts[1:]:
+            self.move_to(x, y)
+
+    def wait(self, amount: float) -> None:
+        """Insert a WAT instruction."""
+        self.file.add_instruction(Instruction("WAT", amount))
 
     def _is_at(self, point: Point) -> bool:
         return math.dist(self._pos, point) <= self.join_tol
@@ -146,20 +226,11 @@ class FGenerator:
     # ----------------------------------------------
 
     def generate_instructions(self) -> None:
+        """Turn the polylines read from the DXF into instructions."""
         for polyline in self.polylines:
-            start = polyline[0]
+            self.draw_polyline(polyline)
 
-            # Only lift the pen and travel if we are not already at the start point
-            if not self._is_at(start):
-                self._pen_up()
-                self._move_to(*start)
-
-            self._pen_down()
-
-            for x, y in polyline[1:]:
-                self._move_to(x, y)
-
-        self._pen_up()  # leave the pen lifted when finished
+        self.pen_up()  # leave the pen lifted when finished
 
     def save(
         self,
