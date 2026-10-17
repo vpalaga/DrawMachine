@@ -40,12 +40,14 @@ class FCODE:
     def add_instruction(self, instruction: Instruction) -> None:
         self.instructions.append(instruction)
 
-    def save(self, path: str | Path | None = None) -> Path:
+    def save(self, path: Path) -> Path:
         """Write the FCODE file. Defaults to '<name>.FCODE' in the working
         directory. Returns the path that was written."""
-        target = Path(path) if path is not None else Path(f"{self.name}.FCODE")
 
-        with open(target, "w", encoding="utf-8") as file:
+        target:Path = path / f"{self.name}.FCODE"
+        print(target.absolute())
+
+        with open(target.absolute(), "w", encoding="utf-8") as file:
             for key, value in self.header.items():
                 file.write(f"{key} {value}\n")
 

@@ -261,11 +261,13 @@ class FGenerator:
     def save(
         self,
         show_visualization: bool = True,
-        output_path: str | Path | None = None,
+        output_path: str | Path = Path(".fcodes"),
 
     ) -> None:
         """Write the FCODE file (default: '<name>.FCODE' in the working
         directory) and optionally show the preview."""
+        if isinstance(output_path, str) : output_path:Path = Path(output_path)
+
         written = self.file.save(output_path)
         print(f"saved: {written}")
 
