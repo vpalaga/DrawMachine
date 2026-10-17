@@ -1,5 +1,5 @@
 from Controller import Controller
 
-cont = Controller(r'C:\Users\vit\OneDrive\Documents\GitHub\DrawMachine\FCODEgenerator\dxfexamples\circle.FCODE')
+cont = Controller(r'/FCODEgenerator/.fcodes/vilik.FCODE')
 
 cont.do_file()

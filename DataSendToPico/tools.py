@@ -55,8 +55,3 @@ def RequestFailCheck(rec:bool, fin:bool)->None:
     if fin:
         raise Error("\n" + Colors.FAIL + "="*20 + "\n" + "    FINISH ERROR " + "\n" + "="*20 + Colors.ENDC)
 
-@RequestReport
-def add(a, b):
-    return a+b
-
-add(1,1)

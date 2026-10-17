@@ -1,6 +1,6 @@
 from MotorOverclass import StepperMotor
 from CDC_send import Transmitter
-from idkfornow import RequestReport, RequestFailCheck
+from tools import RequestReport, RequestFailCheck
 import settings
 
 class MotorOutOfRangeError(Exception):#
@@ -13,7 +13,7 @@ class MotorController:
        and move servos
     """
     starting_offsets_user_presets = { # in mm from left bottom corner
-        "A4": (45, 40) # measure
+        "A4": (33, 48) # measure
     }
 
     def __init__(self, move_format="A4"):
@@ -22,8 +22,8 @@ class MotorController:
         self.transmitter = Transmitter(console=False)
 
         #stepper motor objects to store the bullshit motor data
-        self.x_motor = StepperMotor(name="x_motor", max_pos_mm=297, tmc_mirco_spt=16) # measure
-        self.y_motor = StepperMotor(name="y_motor", max_pos_mm=210, tmc_mirco_spt=16) # measure
+        self.x_motor = StepperMotor(name="x_motor", max_pos_mm=297, tmc_mirco_spt=8) # measure
+        self.y_motor = StepperMotor(name="y_motor", max_pos_mm=210, tmc_mirco_spt=8) # measure
 
         # deal with starting offset (x, y)
         if move_format in MotorController.starting_offsets_user_presets.keys():# and type(move_format) == str:
@@ -54,7 +54,7 @@ class MotorController:
             self.x_motor.pos_mm += x # update the mm variable in stepper object
 
             # calculate the steps, based on the position of required mm pos and current mm pos, due to rounding errors
-            x_steps = round(self.x_motor.steps_p_mm * (self.x_motor.pos_mm - x_motor_move_starting_mmpos)) # 10mm*1800steps = 18000 steps
+            x_steps = round(self.x_motor.steps_p_mm * (self.x_motor.pos_mm - x_motor_move_starting_mmpos))
 
         else:
             raise MotorOutOfRangeError(self.x_motor, x)
@@ -78,42 +78,44 @@ class MotorController:
 
     @RequestReport
     def step_move(self, x:int, y:int)->None:
-        if not settings.TEST_MODE:
-            receive_state = self.transmitter.send_and_receive("MOV " + str(x) + " " + str(y) + "\n")
-            finish_state = self.transmitter.send_and_receive(None) # wait for finish
-            RequestFailCheck(receive_state, finish_state)
+        receive_state = self.transmitter.send_and_receive("MOV " + str(x) + " " + str(y) + "\n")
+        finish_state = self.transmitter.send_and_receive(None) # wait for finish
+        RequestFailCheck(receive_state, finish_state)
 
     @RequestReport
     def calibrate(self)->None:
         # send calibrate instruction
 
-        if not settings.TEST_MODE:
-            receive_state = self.transmitter.send_and_receive("CLB\n")
-            finish_state = self.transmitter.send_and_receive(None) # wait for finish
-            RequestFailCheck(receive_state, finish_state)
+        receive_state = self.transmitter.send_and_receive("CLB\n")
+        finish_state = self.transmitter.send_and_receive(None) # wait for finish
+        RequestFailCheck(receive_state, finish_state)
 
-            # move to starting offset
-            self.move_to_mm(*MotorController.starting_offsets_user_presets["A4"])
+        # move to starting offset
+        self.move_to_mm(*MotorController.starting_offsets_user_presets["A4"])
 
         # reset the motors
         self.x_motor.reset()
         self.y_motor.reset()
 
-        #reset the servo as well?
+        #the head calibration is included in this pico call
 
     @RequestReport
     def penUp(self):
-        if not settings.TEST_MODE:
-            receive_state = self.transmitter.send_and_receive("PUP\n")
-            finish_state = self.transmitter.send_and_receive(None) # wait for finish
-            RequestFailCheck(receive_state, finish_state)
+        receive_state = self.transmitter.send_and_receive("PUP\n")
+        finish_state = self.transmitter.send_and_receive(None) # wait for finish
+        RequestFailCheck(receive_state, finish_state)
 
     @RequestReport
     def penDown(self):
-        if not settings.TEST_MODE:
-            receive_state = self.transmitter.send_and_receive("PDN\n")
-            finish_state = self.transmitter.send_and_receive(None) # wait for finish
-            RequestFailCheck(receive_state, finish_state)
+        receive_state = self.transmitter.send_and_receive("PDN\n")
+        finish_state = self.transmitter.send_and_receive(None) # wait for finish
+        RequestFailCheck(receive_state, finish_state)
+
+    @RequestReport
+    def headCalibrate(self)->None:
+        receive_state = self.transmitter.send_and_receive("HCB\n")
+        finish_state = self.transmitter.send_and_receive(None) # wait for finish
+        RequestFailCheck(receive_state, finish_state)
 
     @RequestReport
     def wait(self, secs):
