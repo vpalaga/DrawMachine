@@ -37,6 +37,8 @@ class FGenerator:
         optimize: bool = True,
         center: bool = True,
         join_tol: float = 1e-4,
+        head_calibration_after_instruction:int = 500,
+        overall_calibration_after_instruction:int = 2000
     ) -> None:
         source_str = str(source)
         self.from_dxf: bool = Path(source_str).suffix.lower() == ".dxf"
@@ -54,6 +56,8 @@ class FGenerator:
         self.paper_format: str = paper_format
         self.join_tol: float = join_tol  # max gap at which two points count as the same
         self._plane: tuple[float, float] = paper_size(paper_format)
+        self.head_calibration_after_instruction = head_calibration_after_instruction
+        self.overall_calibration_after_instruction = overall_calibration_after_instruction
 
         self.file = FCODE(size=paper_format, name=self.name)
 
@@ -75,6 +79,9 @@ class FGenerator:
         self._pos: Point = (self.vis.nozzle_x, self.vis.nozzle_y)
         self._pen_is_down: bool = False
         self._warned_off_plane: bool = False
+
+        self._head_calibrations:int = 0
+        self._calibrations:int = 0
 
         if self.from_dxf and optimize:
             self.optimize()
@@ -218,6 +225,11 @@ class FGenerator:
         """Insert a WAT instruction."""
         self.file.add_instruction(Instruction("WAT", amount))
 
+    def head_calibrate(self):
+        self.file.add_instruction(Instruction("HCB"))
+    def calibrate(self):
+        self.file.add_instruction(Instruction("CLB"))
+
     def _is_at(self, point: Point) -> bool:
         return math.dist(self._pos, point) <= self.join_tol
 
@@ -230,12 +242,27 @@ class FGenerator:
         for polyline in self.polylines:
             self.draw_polyline(polyline)
 
+            # count of instructions in the file
+            instructions = len(self.file.instructions)
+            # do calibrations
+            if math.floor(instructions / self.head_calibration_after_instruction) > self._head_calibrations :
+                self._head_calibrations += 1
+                self.head_calibrate()
+
+                if self.pen_is_down:
+                    self.file.add_instruction(Instruction("PDN"))
+
+            if math.floor(instructions / self.overall_calibration_after_instruction) > self._calibrations:
+                self._calibrations += 1
+                self.calibrate()
+
         self.pen_up()  # leave the pen lifted when finished
 
     def save(
         self,
         show_visualization: bool = True,
         output_path: str | Path | None = None,
+
     ) -> None:
         """Write the FCODE file (default: '<name>.FCODE' in the working
         directory) and optionally show the preview."""

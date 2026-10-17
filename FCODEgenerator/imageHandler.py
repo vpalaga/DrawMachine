@@ -22,7 +22,9 @@ class Visual:
     """
 
     DRAW_COLOR: Color = (0, 0, 0)
+    DRAW_THICKNESS: int = 5
     TRAVEL_COLOR: Color = (255, 0, 0)
+    TRAVEL_THICKNESS:int = 2
     PAPER_COLOR: Color = (0, 120, 255)
 
     def __init__(
@@ -94,14 +96,16 @@ class Visual:
         for point in points:
             self.dot(point)
 
-    def line(self, start_pos: Point, end_pos: Point, c: Color = DRAW_COLOR) -> None:
-        self.draw.line((*self.to_pixel(*start_pos), *self.to_pixel(*end_pos)), c, 1)
+    def line(self, start_pos: Point, end_pos: Point, c: Color = DRAW_COLOR, w:int = DRAW_THICKNESS) -> None:
+        self.draw.line((*self.to_pixel(*start_pos), *self.to_pixel(*end_pos)), c, w)
 
     # ----------------------------------------------
 
     def move(self, x: float, y: float) -> None:
         color = self.DRAW_COLOR if self.pen_is_down else self.TRAVEL_COLOR
-        self.line((self.nozzle_x, self.nozzle_y), (x, y), c=color)
+        width = self.DRAW_THICKNESS if self.pen_is_down else self.TRAVEL_THICKNESS
+
+        self.line((self.nozzle_x, self.nozzle_y), (x, y), c=color, w=width)
         self.nozzle_x, self.nozzle_y = x, y  # update nozzle pos
 
     def penup(self) -> None:
