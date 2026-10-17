@@ -4,14 +4,15 @@
 #include "Stepper.h"
 class StepperDriver {
 public:
-    int motor_sleep_us;
+    int motor_sleep_us = 50;
     
-    bool x_dir;
-    bool y_dir;
+    bool x_dir = false;
+    bool y_dir = false;
 
     StepperDriver(Stepper::stepper_pins pins_x, Stepper::stepper_pins pins_y);
     void move(int x, int y);
-    void bresenham(Stepper leadStepper, Stepper followStepper, int lead, int follow, bool leadDir, bool followDir);
+    // steppers are taken by reference so the direction cache of the real motor is used
+    void bresenham(Stepper& leadStepper, Stepper& followStepper, int lead, int follow, bool leadDir, bool followDir);
     void enable(bool setState);
     void pos_reset();
     void printPosToTermial();
@@ -24,10 +25,8 @@ private:
     Stepper xStepperMotor;
     Stepper yStepperMotor;
 
-    int USE_SPROFILE_FROM_STEPS;
-    double MM_p_STEP;
-    
-
+    int USE_SPROFILE_FROM_STEPS = 200;
+    double MM_p_STEP = 0.002;
 };
 
 #endif

@@ -2,6 +2,7 @@
 #include "pico/stdlib.h"
 #include <stdio.h>
 #include <cmath>
+#include <cstdlib>
 
 StepperDriver::StepperDriver(Stepper::stepper_pins pins_x, Stepper::stepper_pins pins_y)
         : xStepperMotor(pins_x),
@@ -9,21 +10,23 @@ StepperDriver::StepperDriver(Stepper::stepper_pins pins_x, Stepper::stepper_pins
     const int STEPS_P_ROT = 1000;
     const int ROD_PITCH_mm = 2;
 
-    const int USE_SPROFILE_FROM_STEPS = 200;
+    // assign the MEMBERS (before, local constants shadowed them and the members stayed uninitialized)
+    USE_SPROFILE_FROM_STEPS = 200;
     const int STEPS_P_1MM = STEPS_P_ROT / ROD_PITCH_mm;
-    const double MM_p_STEP = (double)1 / STEPS_P_1MM;
-};
+    MM_p_STEP = 1.0 / STEPS_P_1MM;
+}
+
 void StepperDriver::move(int x, int y){
     if(x == 0 && y == 0){return;}
     // update stepper pos
     x_pos += x; 
     y_pos += y;
 
-    bool x_dir = (x<0) ? true : false; // change if the direction is wrong
-    bool y_dir = (y<0) ? true : false;
+    bool x_dir = (x<0) ? false : true; // change if the direction is wrong
+    bool y_dir = (y<0) ? false : true;
 
     // set both to positive
-    x = abs(x); y = abs(y);
+    x = std::abs(x); y = std::abs(y);
     
     // enable the motors
     enable(true);
@@ -35,13 +38,11 @@ void StepperDriver::move(int x, int y){
     }
 
     enable(false); // disenable
+}
 
-    return;
-};
-
-void StepperDriver::bresenham(Stepper leadStepper, Stepper followStepper, int lead, int follow, bool leadDir, bool followDir){
+void StepperDriver::bresenham(Stepper& leadStepper, Stepper& followStepper, int lead, int follow, bool leadDir, bool followDir){
     // how many steps of follow pro one step of lead
-    float bresenhamStep = (float)follow / lead; // needs to be <0 
+    float bresenhamStep = (float)follow / lead; // needs to be <= 1
 
     int followPos   = 0;
     int followCycle;
@@ -50,7 +51,7 @@ void StepperDriver::bresenham(Stepper leadStepper, Stepper followStepper, int le
     for (int cycle = 1; cycle<lead+1; cycle++){ // cycle need to start at 1
         
         // calculate how many steps at current cycle position 
-        followCycle = round(cycle*bresenhamStep);
+        followCycle = (int)std::round(cycle*bresenhamStep);
         
         // check how many are needed for this cycle
         diffFollowCycle = followCycle - followPos;
@@ -74,7 +75,6 @@ void StepperDriver::bresenham(Stepper leadStepper, Stepper followStepper, int le
             sleep_us(motor_sleep_us);
         }
     }
-    return;
 }
 
 void StepperDriver::enable(bool setState){
@@ -84,8 +84,8 @@ void StepperDriver::enable(bool setState){
 
 void StepperDriver::pos_reset(){
     x_pos = y_pos = 0;
-};
+}
 
 void StepperDriver::printPosToTermial(){
-    printf("head pos: X: %.4fmm, Y: %.4fmm \n", (x_pos * MM_p_STEP), (y_pos * MM_p_STEP)); // round up to 4 digets -> r(10**4)/10**4
-};
+    printf("head pos: X: %.4fmm, Y: %.4fmm \n", (x_pos * MM_p_STEP), (y_pos * MM_p_STEP));
+}

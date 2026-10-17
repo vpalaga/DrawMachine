@@ -24,17 +24,18 @@ void Led::setState(bool set_to){
 }
 
 void Led::setBrightness(int duration_ms, float br){
-    int cycles = duration_ms / cycleDuration_us;
+    // duration is in ms, cycle is in us
+    int cycles = (duration_ms * 1000) / cycleDuration_us;
 
     float on_us = br * cycleDuration_us;
     float off_us = cycleDuration_us - on_us; 
 
     setState(false);
     
-    for (int i; i<cycles;i++){
+    for (int i = 0; i < cycles; i++){
         toggleLed();
         sleep_us(on_us);
         toggleLed();
         sleep_us(off_us);
     }
-};
+}

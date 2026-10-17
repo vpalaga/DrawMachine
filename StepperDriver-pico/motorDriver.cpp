@@ -6,14 +6,12 @@
 #include <math.h>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
+#include <algorithm>
 
 #include "pico/stdlib.h"
-#include "hardware/i2c.h"
 #include "hardware/timer.h"
 #include "hardware/clocks.h"
-#include "hardware/i2c.h"
-
-#include "algorithm"
 
 #include "drivers/Led.h"
 #include "drivers/StepperDriver.h" 
@@ -32,13 +30,14 @@ const int BUF_MAX_LEN = 128;
 uint8_t consoleEnabled = 2; // 2 for unassigned 1 true 0 false
 
 // instruction type vs arguments
-const map<string, int> INSTRUCTION_SIZES = {
+const map<string, size_t> INSTRUCTION_SIZES = {
     {"MOV", 2},// xsteps ysteps
     {"CLB", 0},// 
     {"WAT", 1},// seconds
     {"PUP", 0}, // 
     {"PDN", 0}, // 
-    {"SCM", 1} // mode (0,1,2)
+    {"SCM", 1}, // mode (0,1,2)
+    {"HCB", 0} // head calibrate
 };
 //=============================================================
 
@@ -59,44 +58,72 @@ SwitchButton zSwich(2);
 Led instructionLed(15);
 Led ledConsoleMode(14);
 
-// driver: xstp xdir ystp ydir
-Stepper::stepper_pins x_stepper_pins = {4, 3, 5};
+// driver: step dir enable
+Stepper::stepper_pins x_stepper_pins = {13, 12, 10};
 Stepper::stepper_pins y_stepper_pins = {8, 6, 9};
-Stepper::stepper_pins z_stepper_pins = {13, 12, 10};
+Stepper::stepper_pins z_stepper_pins = {4, 3, 5}; 
 
 struct Settings {
-    const uint16_t z_stepper_us_sleep = 50; 
-    const int pen_up_down_steps = 300; // needs to be tested 
+    const uint16_t z_stepper_us_sleep = 100; 
+    const int pen_up_down_steps = 6500; // needs to be tested 
     const int INSTRUCION_TIMEOUT_MS = 3000; 
-    const uint16_t x_y_halfcycle_us_sleep = 50;
+    const uint16_t x_y_halfcycle_us_sleep = 75;
+    // safety limits so calibration can never run forever if a switch is missing / miswired
+    const int max_calibrate_steps_xy = 400000;
+    const int max_calibrate_steps_z  = 50000;
 }settings;
 
 
-StepperDriver stepper_driver(x_stepper_pins, x_stepper_pins);
+StepperDriver stepper_driver(x_stepper_pins, y_stepper_pins);
 Stepper z_stepper(z_stepper_pins);
 
-void z_stepper_calibrate(){
+// direction values for Stepper::stepOnce (same mapping as Stepper::move: steps>=0 -> false, steps<0 -> true)
+const bool Z_UP   = false;
+const bool Z_DOWN = true;
+
+// returns false = ok, true = failed (end switch never reached / never released)
+bool z_stepper_calibrate(){
+    bool failed = false;
+    int guard = 0;
+
     //enable the motor
     z_stepper.enable(true);
-    //if the head is already in switch conduct position, move down 
-    while (zSwich.getSwichState()){
-        z_stepper.move(1, settings.z_stepper_us_sleep); // move one step z down (z-)
+
+    // if the head is already in switch conduct position, move down until it is released
+    // (outer loop re-checks after a short pause, so a bouncing switch is not mistaken for released;
+    //  both loops test !failed, so hitting the step limit really leaves them)
+    while (!failed && zSwich.getSwichState()){
+        while (!failed && zSwich.getSwichState()){
+            if (++guard > settings.max_calibrate_steps_z){failed = true; break;}
+            z_stepper.stepOnce(Z_DOWN, settings.z_stepper_us_sleep);
+            ledConsoleMode.setState(zSwich.getSwichState());
+        }
+        sleep_ms(5);
     }
 
-    while (!zSwich.getSwichState()){ // dosnt conduct
-        // i dont think a sleep is needed here, since 900 steps = 1mm move, so should be more than enough time to stop
-        // move into z+ direction
-        z_stepper.move(1, settings.z_stepper_us_sleep); // move one step z up (z+)
+    // move up until the switch conducts
+    guard = 0;
+    while (!failed && !zSwich.getSwichState()){
+        while (!failed && !zSwich.getSwichState()){
+            if (++guard > settings.max_calibrate_steps_z){failed = true; break;}
+            z_stepper.stepOnce(Z_UP, settings.z_stepper_us_sleep);
+            ledConsoleMode.setState(zSwich.getSwichState());
+        }
+        sleep_ms(5);
     }
-    stepper_driver.is_pen_down = false;
+
+    ledConsoleMode.setState(zSwich.getSwichState());
+
+    if (!failed) stepper_driver.is_pen_down = false;
     z_stepper.enable(false); // disenable
+    return failed;
 }
 
 class Instructions{
 public:
     static bool wait(float seconds){
 
-        sleep_ms(seconds*1000); // make into mini seconds
+        sleep_ms((uint32_t)(seconds*1000)); // make into mini seconds
 
         return false;
     }
@@ -109,26 +136,33 @@ public:
     }
 
     static bool calibrate(){
+        int guard = 0;
 
         while ((!xSwich.getSwichState()) && (!ySwich.getSwichState())){ // dosnt conduct
-            // i dont think a sleep is needed here, since 900 steps = 1mm move, so should be more than enough time to stop
-            stepper_driver.move(-1, -1); // move one step x back (-)
+            if (++guard > settings.max_calibrate_steps_xy){stepper_driver.enable(false); return true;}
+            stepper_driver.move(-1, -1); // move one step x and y back (-)
         }
+        guard = 0;
         while (!xSwich.getSwichState()){ // dosnt conduct
-            // i dont think a sleep is needed here, since 900 steps = 1mm move, so should be more than enough time to stop
+            if (++guard > settings.max_calibrate_steps_xy){stepper_driver.enable(false); return true;}
             stepper_driver.move(-1, 0); // move one step x back (-)
         }
+        guard = 0; 
+
         while (!ySwich.getSwichState()){ // dosnt conduct
-            // i dont think a sleep is needed here, since 900 steps = 1mm move, so should be more than enough time to stop
-            stepper_driver.move(0, -1); // move one step x back (-)
+            if (++guard > settings.max_calibrate_steps_xy){stepper_driver.enable(false); return true;}
+            stepper_driver.move(0, -1); // move one step y back (-)
         }
         // reset stepper pos
         stepper_driver.pos_reset();
 
         // z calib
-        z_stepper_calibrate();
 
-        return false; // calibrate 
+        return z_stepper_calibrate();
+    }
+
+    static bool head_calibrate(){
+        return z_stepper_calibrate();
     }
 
     static bool pen_up(){
@@ -159,41 +193,28 @@ public:
     }
 };
 
-pair<string, vector<float>> get_instruction_details(string instruction){
-	// return string Instruction type, int* args4
+// split a line into instruction type + float arguments.
+// returns false if the line is empty or an argument is not a valid number (never throws).
+static bool parse_instruction(const string& line, string& instruction_type, vector<float>& arguments){
+    istringstream iss(line);
+    string part;
 
-	istringstream iss(instruction);
-	vector<string> parts;
-	vector<float> arguments;// store
-	string part;
+    arguments.clear();
 
-	string instruction_type; // first object in parts
-	int parameters_size;
+    if (!(iss >> instruction_type)) return false; // empty / whitespace only
 
-	while (iss >> part) {   // splits on whitespace by default
-		parts.push_back(part);
-	}
-
-	instruction_type = parts[0];
-	parameters_size = parts.size() - 1; // ignore the firts part
-
-	for (int i = 1; i<parameters_size+1;i++) { // shift i by +1, so i can acces vector[i] ang skip the first element
-		// convert str argumetents to floats
-		arguments.push_back(stof(parts[i]));
-	}
-	/*
-	for (const auto&  : words) {
-
-		cout << w << "\n";
-	}
-	*/
-	return {instruction_type, arguments};
+    while (iss >> part) {   // splits on whitespace by default
+        char* end = nullptr;
+        float value = strtof(part.c_str(), &end);
+        if (end == part.c_str() || *end != '\0') return false; // not a number
+        arguments.push_back(value);
+    }
+    return true;
 }
 
 // stuff for CDC full string recive
 char rx_buf[BUF_MAX_LEN];
 int rx_pos = 0;
-int c;
 
 //=============================================================
 
@@ -211,32 +232,28 @@ void waitForCDC(){
     }
 }
 
-void process_received(const string buf, int len) {
+void process_received(const string& buf, int len) {
     // return false (0): the message is OK 
     // return true  (1): the message is unsable
-    // handle complete message (null-terminated)
-    
-    auto instructionDetails = get_instruction_details(buf);
+    string instructionType;
+    vector<float> instructionArgunments;
 
-    string instructionType = instructionDetails.first;
-    vector<float> instructionArgunments = instructionDetails.second;
-    
-    // check instruction usability
-    
     // state of recived message
     bool recivedMessageState = false;
 
-    if (INSTRUCTION_SIZES.count(instructionType) == 0){ //check if instruction is valid, if 1=false, 0=true
-        recivedMessageState = true;
-    }    
-    if (INSTRUCTION_SIZES.at(instructionType) != (instructionArgunments.size())){ //check arguments size
-        recivedMessageState = true;
-
+    if (!parse_instruction(buf, instructionType, instructionArgunments)){
+        recivedMessageState = true; // empty line or bad number
+    } else {
+        auto it = INSTRUCTION_SIZES.find(instructionType);
+        if (it == INSTRUCTION_SIZES.end()){        // unknown instruction
+            recivedMessageState = true;
+        } else if (it->second != instructionArgunments.size()){ // wrong argument count
+            recivedMessageState = true;
+        }
     }
 
     // send out the state of recived message
     confirm_recive(recivedMessageState);
-    
 
     if (recivedMessageState) return; // an error has happened
 
@@ -245,7 +262,7 @@ void process_received(const string buf, int len) {
     
     if          (instructionType=="MOV"){
     
-        instructionFinished = Instructions::move(instructionArgunments[0], instructionArgunments[1]);
+        instructionFinished = Instructions::move((int)instructionArgunments[0], (int)instructionArgunments[1]);
     
     } else if   (instructionType=="CLB"){
         // calibrate
@@ -256,15 +273,15 @@ void process_received(const string buf, int len) {
         instructionFinished = Instructions::wait(instructionArgunments[0]);
 
     } else if (instructionType=="PUP"){
-        // channel, angle
         instructionFinished = Instructions::pen_up();
     } else if (instructionType=="PDN"){
-        // channel, angle
         instructionFinished = Instructions::pen_down();  
     
     } else if (instructionType=="SCM"){
         // mode
         instructionFinished = Instructions::set_instruction_mode((uint8_t)instructionArgunments[0]);
+    } else if (instructionType=="HCB"){
+        instructionFinished = Instructions::head_calibrate();
     }
 
 
@@ -279,7 +296,7 @@ void manual_instruction(){
     if(mSwich_XP.getSwichState()){
         x_move++;
         if(consoleEnabled == 1){
-            printf("B1 (xp): pressed");
+            printf("B1 (xp): pressed\n");
         }    
     }
 
@@ -296,30 +313,30 @@ void manual_instruction(){
     if(mSwich_YP.getSwichState()){
         y_move++;
         if(consoleEnabled == 1){
-            printf("B3 (yp): pressed");
+            printf("B3 (yp): pressed\n");
         }    
     }
 
     if(mSwich_YM.getSwichState()){
         y_move--;
         if(consoleEnabled == 1){
-            printf("B4 (ym): pressed");
+            printf("B4 (ym): pressed\n");
         }    
     }
 
     if(mSwich_B1.getSwichState()){ // print head position
         if (consoleEnabled == 1){
             stepper_driver.printPosToTermial();
-            printf("B5: pressed");
+            printf("B5: pressed\n");
             sleep_ms(700);
         }
     }
 
     if(mSwich_B2.getSwichState()){
-        if(consoleEnabled){
-            printf("B6: pressed");
+        if(consoleEnabled == 1){
+            printf("B6: pressed\n");
         }    
-}
+    }
 
     // move the motors if needed
     if (x_move != 0 || y_move != 0){
@@ -331,39 +348,42 @@ void manual_instruction(){
 
 // main functions:
 
+// returns true when a complete line was received and processed
 bool CDC_loop(){
-    // get full buffer
+    bool lineComplete = false;
+
+    // read everything that is available
     while (true) {
-        c = getchar_timeout_us(0);
+        int ch = getchar_timeout_us(0);
         
-        if (c == PICO_ERROR_TIMEOUT){ 
+        if (ch == PICO_ERROR_TIMEOUT){ 
             break; // no more data, or no data to start with
         }
-        if (rx_pos < BUF_MAX_LEN - 1) {
-            rx_buf[rx_pos++] = (char)c;
-        }
-        // optional: detect end-of-line to process early, should allways be the case
-        if (c == '\n' || c == '\r') {
+        if (ch == '\n' || ch == '\r') {
+            if (rx_pos == 0) continue; // blank line / second half of "\r\n": ignore
+            lineComplete = true;       // end of message
             break;
         }
+        if (rx_pos < BUF_MAX_LEN - 1) {
+            rx_buf[rx_pos++] = (char)ch;
+        }
     }
 
-    // work with recived string
-    if (rx_pos > 0) {
-        rx_buf[rx_pos] = '\0';    // null terminate
-        
-        // convert char* to std::string
-        string message(rx_buf);
-        process_received(message, rx_pos);
+    // only process full lines, never a half-received one
+    if (!lineComplete) return false;
 
-        // reset for next message
-        rx_pos = 0;
-        return true;
-    }
-    return false;
+    rx_buf[rx_pos] = '\0';    // null terminate
+    
+    // convert char* to std::string
+    string message(rx_buf);
+    int len = rx_pos;
+
+    // reset for next message
+    rx_pos = 0;
+
+    process_received(message, len);
+    return true;
 }
-
-int time_from_last_inst;
 
 int main()
 {
@@ -371,22 +391,31 @@ int main()
     // set to thing in settings
     stepper_driver.motor_sleep_us = settings.x_y_halfcycle_us_sleep;
 
+    // blink for startup
+    for (int i = 0; i<6; i++){ledConsoleMode.toggleLed();sleep_ms(200);}
+
+    // real time based timeout (instead of counting loop iterations)
+    absolute_time_t last_instruction_time = get_absolute_time();
+    const int64_t timeout_us = (int64_t)settings.INSTRUCION_TIMEOUT_MS * 1000;
+
     while (true) { // CDC loop
         
-        if (CDC_loop()){time_from_last_inst=0;} else {time_from_last_inst++;}
-        
+        if (CDC_loop()){last_instruction_time = get_absolute_time();}
+        //ledConsoleMode.setState(zSwich.getSwichState());
+
         sleep_ms(1); // bottle neck, ignore for now
 
-        if (time_from_last_inst > settings.INSTRUCION_TIMEOUT_MS){
+        if (absolute_time_diff_us(last_instruction_time, get_absolute_time()) > timeout_us){
             // enable manual control
             instructionLed.setState(false);
             stepper_driver.enable(false);
 
-            manual_instruction();
-        } 
+            //manual_instruction();
+        } else {
+            // an instruction was received recently
+            instructionLed.setState(true);
+        }
         
-        // reset instruction led after reciving an istructon
-        if (time_from_last_inst == 0){instructionLed.setState(true);}
         if (consoleEnabled != ledConsoleMode.state && consoleEnabled != 2)   {ledConsoleMode.setState(consoleEnabled);}
     }   
 }
