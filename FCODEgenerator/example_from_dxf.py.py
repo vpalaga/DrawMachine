@@ -1,7 +1,6 @@
 from main import FGenerator
 
-DXF_PATH = r"C:\Users\vit\OneDrive\Documents\GitHub\DrawMachine\FCODEgenerator\dxfexamples\vilik.dxf"
-
+DXF_PATH = r"dxfexamples\vilik.dxf"
 
 def from_dxf() -> None:
     # create a generating object (optimize=True reorders paths to minimize pen travel)
@@ -15,4 +14,3 @@ def from_dxf() -> None:
 
 if __name__ == "__main__":
     from_dxf()
-    # manual()
