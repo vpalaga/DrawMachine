@@ -227,8 +227,11 @@ class FGenerator:
 
     def head_calibrate(self):
         self.file.add_instruction(Instruction("HCB"))
+        self._pen_is_down = False # moves it up
+
     def calibrate(self):
         self.file.add_instruction(Instruction("CLB"))
+        self._pen_is_down = False # moves it up
 
     def _is_at(self, point: Point) -> bool:
         return math.dist(self._pos, point) <= self.join_tol
@@ -248,9 +251,6 @@ class FGenerator:
             if math.floor(instructions / self.head_calibration_after_instruction) > self._head_calibrations :
                 self._head_calibrations += 1
                 self.head_calibrate()
-
-                if self.pen_is_down:
-                    self.file.add_instruction(Instruction("PDN"))
 
             if math.floor(instructions / self.overall_calibration_after_instruction) > self._calibrations:
                 self._calibrations += 1
