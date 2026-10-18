@@ -22,16 +22,26 @@ def t():
     return time.strftime("%H:%M:%S",
              time.gmtime(time.time()))
 
-# decorator for all the request functions
-def RequestReport(func:Callable[P, R]) -> Callable[P, R]:
+def RequestReport(func: Callable[P, R]) -> Callable[P, R]:
     @functools.wraps(func)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        # drop `self` (first positional arg) so we only show the real arguments
+        shown_args = args[1:] if args else ()
+        arg_str = ", ".join(
+            [repr(a) for a in shown_args] +
+            [f"{k}={v!r}" for k, v in kwargs.items()]
+        )
+
         start = time.perf_counter()
-        print(f"{Colors.OKBLUE}{t()}{Colors.ENDC} | requesting: {Colors.BOLD}{func.__name__}{Colors.ENDC}{str(args):<7} ", end="", flush=True)
+        print(
+            f"{Colors.OKBLUE}{t()}{Colors.ENDC} | requesting: "
+            f"{Colors.BOLD}{func.__name__}{Colors.ENDC}({arg_str}) ",
+            end="", flush=True,
+        )
         try:
             return func(*args, **kwargs)
         finally:
-            elapsed = round((time.perf_counter() - start)*1000, ndigits=2)
+            elapsed = round((time.perf_counter() - start) * 1000, ndigits=2)
             print(f"| finished in {Colors.UNDERLINE}{elapsed}ms{Colors.ENDC}", flush=True)
 
     return wrapper
