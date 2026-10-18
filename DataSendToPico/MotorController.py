@@ -16,7 +16,7 @@ class MotorController:
         "A4": (33, 48) # measure
     }
 
-    home_position:tuple[int,int] = (5, 250) # mm from 0,0
+    home_position:tuple[int,int] = (0, 200) # mm from 0,0
 
     def __init__(self, move_format="A4"):
 
@@ -36,6 +36,7 @@ class MotorController:
         # calib
         self.calibrate()
 
+    @RequestReport
     def move_to_mm(self, x_target:float, y_target:float)->None:
         """(target - current) (x, y)"""
         
@@ -83,10 +84,10 @@ class MotorController:
         self.headCalibrate()
         self.move_to_mm(*MotorController.home_position)
 
-    @RequestReport
+
     def step_move(self, x:int, y:int)->None:
-        receive_state = self.transmitter.send_and_receive("MOV " + str(x) + " " + str(y) + "\n")
-        finish_state = self.transmitter.send_and_receive(None) # wait for finish
+        receive_state = bool(self.transmitter.send_and_receive("MOV " + str(x) + " " + str(y) + "\n"))
+        finish_state  = bool(self.transmitter.send_and_receive(None)) # wait for finish
         RequestFailCheck(receive_state, finish_state)
 
     @RequestReport
