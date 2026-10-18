@@ -13,7 +13,7 @@ from tkinter import ttk
 
 # If the receive state is an error, the Pico may never send a "finish" reply.
 # CDC_test.py always waits for it (True). Set to False to skip waiting after a receive error.
-WAIT_FINISH_AFTER_RECEIVE_ERROR = True
+WAIT_FINISH_AFTER_RECEIVE_ERROR = False
 
 QUICK_COMMANDS = ["CLB", "HCB", "PUP", "PDN"]
 

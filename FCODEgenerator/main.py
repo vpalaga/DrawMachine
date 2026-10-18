@@ -233,6 +233,10 @@ class FGenerator:
         self.file.add_instruction(Instruction("CLB"))
         self._pen_is_down = False # moves it up
 
+    def home(self):
+        """adds HOM instruction: HCB and MOV to home pos (MotorController)"""
+        self.file.add_instruction(Instruction("HOM"))
+
     def _is_at(self, point: Point) -> bool:
         return math.dist(self._pos, point) <= self.join_tol
 
@@ -256,7 +260,7 @@ class FGenerator:
                 self._calibrations += 1
                 self.calibrate()
 
-        self.pen_up()  # leave the pen lifted when finished
+
 
     def save(
         self,

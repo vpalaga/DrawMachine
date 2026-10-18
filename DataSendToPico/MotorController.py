@@ -16,6 +16,8 @@ class MotorController:
         "A4": (33, 48) # measure
     }
 
+    home_position:tuple[int,int] = (5, 250) # mm from 0,0
+
     def __init__(self, move_format="A4"):
 
         # CDC send instruction object
@@ -75,6 +77,11 @@ class MotorController:
         # x or y may be undefined, but if they are, Motor error will be raised
         
         self.step_move(x=x_steps, y=y_steps)
+
+    @RequestReport
+    def home(self)->None:
+        self.headCalibrate()
+        self.move_to_mm(*MotorController.home_position)
 
     @RequestReport
     def step_move(self, x:int, y:int)->None:

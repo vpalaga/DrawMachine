@@ -36,3 +36,5 @@ class Controller:
                     self.motor_driver.headCalibrate()
                 case "WAT":
                     self.motor_driver.wait(float(current_instruction[1]))
+                case "HOM":
+                    self.motor_driver.home()
