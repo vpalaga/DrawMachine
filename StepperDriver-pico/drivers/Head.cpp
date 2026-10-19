@@ -1,31 +1,70 @@
-#ifndef HEAD_H
-#define HEAD_H
+#include "Head.h"
+#include "pico/stdlib.h"
 
-#include "Led.h"
-#include "Stepper.h"
-#include "SwitchButton.h"
+Head::Head(Stepper::stepper_pins stepperPins, int endstopPin, Led& calibrationIndicator)
+        : stepper(stepperPins),
+          endstop(endstopPin),
+          calibrationIndicator(calibrationIndicator) {
+}
 
-class Head {
-public:
-    Head(Stepper::stepper_pins stepperPins, int endstopPin, Led& calibrationIndicator);
+bool Head::moveUntilEndstopState(bool targetState, bool direction, int maxSteps) {
+    int steps = 0;
+    while (true) {
+        while (endstop.getSwichState() != targetState) {
+            if (steps >= maxSteps) {
+                return false;
+            }
 
-    bool calibrate(int maxSteps);
-    bool penUp(int steps);
-    bool penDown(int steps);
-    bool isPenDown() const;
-    void setSpeed(int sleepUs);
+            stepper.stepOnce(direction, stepSleepUs);
+            ++steps;
+            calibrationIndicator.setState(endstop.getSwichState());
+        }
 
-private:
-    static constexpr bool Z_UP = false;
-    static constexpr bool Z_DOWN = true;
+        sleep_ms(5);
+        if (endstop.getSwichState() == targetState) {
+            return true;
+        }
+    }
+}
 
-    bool moveUntilEndstopState(bool targetState, bool direction, int maxSteps);
+bool Head::calibrate(int maxSteps) {
+    stepper.enable(true);
 
-    Stepper stepper;
-    SwitchButton endstop;
-    Led& calibrationIndicator;
-    int stepSleepUs = 100;
-    bool penDownState = false;
-};
+    bool calibrated = moveUntilEndstopState(false, Z_DOWN, maxSteps)
+                   && moveUntilEndstopState(true, Z_UP, maxSteps);
 
-#endif
+    calibrationIndicator.setState(endstop.getSwichState());
+    stepper.enable(false);
+    if (calibrated) {
+        penDownState = false;
+    }
+    return !calibrated;
+}
+
+bool Head::penUp(int steps) {
+    if (!penDownState) {
+        return true;
+    }
+
+    stepper.move(steps, stepSleepUs);
+    penDownState = false;
+    return false;
+}
+
+bool Head::penDown(int steps) {
+    if (penDownState) {
+        return true;
+    }
+
+    stepper.move(-steps, stepSleepUs);
+    penDownState = true;
+    return false;
+}
+
+bool Head::isPenDown() const {
+    return penDownState;
+}
+
+void Head::setSpeed(int sleepUs) {
+    stepSleepUs = sleepUs;
+}

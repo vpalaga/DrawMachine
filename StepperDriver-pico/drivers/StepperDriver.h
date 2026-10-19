@@ -19,7 +19,6 @@ public:
 
     int x_pos = 0;
     int y_pos = 0;
-    bool is_pen_down = false;
 
 private:
     Stepper xStepperMotor;
