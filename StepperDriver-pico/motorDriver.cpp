@@ -67,7 +67,6 @@ Stepper::stepper_pins z_stepper_pins = {4, 3, 5};
 struct Settings {
     const int pen_up_down_steps = 6500; // needs to be tested 
     const int INSTRUCTION_TIMEOUT_MS = 3000;
-    const uint16_t x_y_halfcycle_us_sleep = 75;
     // safety limits so calibration can never run forever if a switch is missing / miswired
     const int max_calibrate_steps_xy = 400000;
     const int max_calibrate_steps_z  = 50000;
@@ -94,6 +93,9 @@ public:
     }
 
     static bool calibrate(){
+
+        stepper_driver.enable(true);
+        
         int guard = 0;
 
         while ((!xSwich.getSwichState()) && (!ySwich.getSwichState())){ // dosnt conduct
@@ -124,7 +126,7 @@ public:
     }
 
     static bool pen_up(){
-        return head.penUp(settings.pen_up_down_steps);
+        return head.penUp(settings.max_calibrate_steps_z);
     }
     
     static bool pen_down(){
@@ -210,6 +212,7 @@ void process_received(const string& buf, int len) {
     bool failed = true;  // default: unknown instruction = unusable
 
     if (instructionType == "MOV") {
+        stepper_driver.enable(true);
         failed = Instructions::move((int)args[0], (int)args[1]);
     } else if (instructionType == "CLB") {
         failed = Instructions::calibrate();
@@ -330,8 +333,6 @@ bool CDC_loop(){
 int main()
 {
     stdio_init_all();
-    // set to thing in settings
-    stepper_driver.motor_sleep_us = settings.x_y_halfcycle_us_sleep;
 
     // blink for startup
     for (int i = 0; i<6; i++){ledConsoleMode.toggleLed();sleep_ms(200);}
@@ -345,7 +346,8 @@ int main()
         if (CDC_loop()){last_instruction_time = get_absolute_time();}
 
         sleep_ms(1); // bottleneck, ignore for now
-
+        ledConsoleMode.setState(head.endstop.getSwichState());
+        
         if (absolute_time_diff_us(last_instruction_time, get_absolute_time()) > timeout_us){
             // enable manual control
             instructionLed.setState(false);

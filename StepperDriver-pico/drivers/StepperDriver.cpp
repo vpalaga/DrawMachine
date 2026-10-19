@@ -20,9 +20,6 @@ void StepperDriver::move(int x, int y){
 
     // set both to positive
     x = std::abs(x); y = std::abs(y);
-    
-    // enable the motors
-    enable(true);
 
     if (x >= y){ // x = lead
         bresenham(xStepperMotor, yStepperMotor, x, y, x_dir, y_dir);    
@@ -30,7 +27,6 @@ void StepperDriver::move(int x, int y){
         bresenham(yStepperMotor, xStepperMotor, y, x, y_dir, x_dir);
     }
 
-    enable(false); // disenable
 }
 
 void StepperDriver::bresenham(Stepper& leadStepper, Stepper& followStepper, int lead, int follow, bool leadDir, bool followDir){

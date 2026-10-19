@@ -27,7 +27,7 @@ bool Head::moveUntilEndstopState(bool targetState, bool direction, int maxSteps)
 
 bool Head::calibrate(int maxSteps) {
     stepper.enable(true);
-
+    sleep_ms(10);
     bool calibrated = moveUntilEndstopState(false, Z_DOWN, maxSteps)
                    && moveUntilEndstopState(true, Z_UP, maxSteps);
 
@@ -38,14 +38,15 @@ bool Head::calibrate(int maxSteps) {
     return !calibrated;
 }
 
-bool Head::penUp(int steps) {
-    if (!penDownState) {
-        return true;
-    }
+bool Head::penUp(int maxSteps) {
+    stepper.enable(true);
+    bool reachedEndstop = moveUntilEndstopState(true, Z_UP, maxSteps);
+    stepper.enable(false);
 
-    stepper.move(steps, stepSleepUs);
-    penDownState = false;
-    return false;
+    if (reachedEndstop) {
+        penDownState = false;
+    }
+    return !reachedEndstop;
 }
 
 bool Head::penDown(int steps) {
