@@ -36,7 +36,7 @@ flowchart LR
 | `StepperDriver-pico/` | Pico firmware (C++ / Pico SDK) |
 | `StepperDriver-pico/bresenham_test.py` | Draws the step pattern of the line algorithm with PIL, used to design the move function |
 | `pcb/2.0/DrawMv2.0/` | **Current board**: KiCad project for the v2.0 controller PCB |
-| `pcb/test/` | First prototype board (v1) with KiCad project and Gerbers |
+| `pcb/test/` | Retired first prototype board (v1), kept for reference only |
 | `pcb2_0_schematic.pdf` | PDF of the v2.0 schematic |
 | `images/` | Documentation images |
 
@@ -247,12 +247,14 @@ The Pico enumerates as a USB CDC serial device. The sender finds it by USB vendo
 
 ## PCB
 
-- **v2.0** (`pcb/2.0/DrawMv2.0/`): Pico, three TMC2209 drivers, end-switch inputs, fused motor supply, status LEDs and a debug header. This is the board the firmware pin map targets.
-- **v1** (`pcb/test/`): first prototype, with Gerbers in `pcb/test/gerbers/`.
+The controller board is **v2.0**, designed in KiCad (about 98 x 67 mm). It carries the Pico, three TMC2209 drivers (U1 to U3, one per axis), per-driver microstepping switches, end-switch inputs, a fused motor supply (6 A fuse and a 330 uF bulk capacitor), status LEDs and a debug header. This is the board the firmware pin map targets.
 
-![v1 prototype board layout](pcb/Screenshot%202026-03-26%20200224.png)
+![DrawMachine v2.0 PCB layout](images/pcb_v2.png)
 
-Both are KiCad projects. The `*-backups` folders are KiCad's automatic backups.
+- KiCad project: `pcb/2.0/DrawMv2.0/`
+- Schematic PDF: `pcb2_0_schematic.pdf`
+
+The v1 prototype in `pcb/test/` is no longer used and is kept only for reference. The `*-backups` folders are KiCad's automatic backups.
 
 ---
 
@@ -260,7 +262,7 @@ Both are KiCad projects. The `*-backups` folders are KiCad's automatic backups.
 
 - [ ] `MotorController.wait()` builds its command with `"WAT " + secs`, which raises a `TypeError` because `secs` is a float. Use `str(secs)`.
 - [ ] `FCODE.save()` does not create the output folder. `.fcodes/` must exist or saving fails.
-- [ ] `CDC_send.py` imports `winsound` and so only runs on Windows. `Transmitter` also looks for the Pico when the module is imported, so the Pico has to be plugged in first.
+- [ ] `Transmitter` in `CDC_send.py` looks for the Pico when the module is imported, so the Pico has to be plugged in before you import it.
 - [ ] `Pico_pins_map.txt` is out of date and does not match the pins in `motorDriver.cpp`. Use the table above.
 - [ ] `StepperDriver.cpp` assumes 1000 steps per revolution when printing head position, while the host assumes 1600 (8 x 200). Positions printed by the firmware will not match.
 - [ ] Manual jog buttons are implemented (`manual_instruction()`) but the call in the main loop is commented out.

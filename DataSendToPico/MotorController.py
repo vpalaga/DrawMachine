@@ -127,6 +127,6 @@ class MotorController:
 
     @RequestReport
     def wait(self, secs):
-        receive_state = self.transmitter.send_and_receive("WAT " + secs + "\n")
+        receive_state = self.transmitter.send_and_receive("WAT " + str(secs) + "\n")
         finish_state = self.transmitter.send_and_receive(None) # wait for finish
         RequestFailCheck(receive_state, finish_state)

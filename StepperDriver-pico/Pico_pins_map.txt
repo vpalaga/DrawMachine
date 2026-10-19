@@ -1,23 +1,59 @@
+Raspberry Pi Pico pin map for motorDriver.cpp (v2.0 board)
+Pins are taken from motorDriver.cpp, so update both together.
 
-                              _______
-                        ______|     |______
-                    GP0 | 1             40|VBUS
-                    GP1 | 2  GP25|LED   39|VSYS
-                    GND | 3             38| GND      
-Swich control X+    GP2 | 4             37|3v3e     
-Swich control Y+    GP3 | 5             36|3V3O     3V3 Source
-Swich control X-    GP4 | 6             35|
-Swich control Y-    GP5 | 7             34|GP28     LED instruction
-                    GND | 8             33| GND     Swich DRAIN
-Swich B1            GP6 | 9             32|GP27     Swich X pull
-Swich B2            GP7 |10             31|GP26     Swich Y pull
-PCA9685 I2C_SDA     GP8 |11             30|RUN
-PCA9685 I2C_SCL     GP9 |12             29|GP22
-PCA9685 GND         GND |13             28| GND     TMC enable
-                    GP10|14             27|GP21     TMC Y step
-                    GP11|15             26|GP20     TMC Y dir
-                    GP12|16             25|GP19     TMC X step
-                    GP13|17             24|GP18     TMC X dir
-                    GND |18             23| GND     TMC GND
-HW069 display CLK   GP14|19             22|GP17     LED consolemode (blue)
-HW069 display DIO   GP15|20             21|GP16     LED 2 (no use now)
+                        +-----[ USB ]------+
+                        |                  |
+                    GP0 |  1            40 | VBUS      
+                    GP1 |  2            39 | VSYS      
+                    GND |  3            38 | GND       
+Z end switch        GP2 |  4            37 | 3V3_EN    
+Z DIR               GP3 |  5            36 | 3V3(OUT)  
+Z STEP              GP4 |  6            35 | ADC_VREF  
+Z EN                GP5 |  7            34 | GP28      
+                    GND |  8            33 | AGND      
+Y DIR               GP6 |  9            32 | GP27      
+Y end switch        GP7 | 10            31 | GP26      
+Y STEP              GP8 | 11            30 | RUN       
+Y EN                GP9 | 12            29 | GP22      Manual jog X+
+                    GND | 13            28 | GND       
+X EN               GP10 | 14            27 | GP21      Manual jog X-
+X end switch       GP11 | 15            26 | GP20      Manual jog Y+
+X DIR              GP12 | 16            25 | GP19      Manual jog Y-
+X STEP             GP13 | 17            24 | GP18      Button B1
+                    GND | 18            23 | GND       
+LED console mode   GP14 | 19            22 | GP17      Button B2
+LED instruction    GP15 | 20            21 | GP16      
+                        +------------------+
+
+GPIO number summary
+-------------------
+GP2  Z end switch
+GP3  Z DIR
+GP4  Z STEP
+GP5  Z EN
+GP6  Y DIR
+GP7  Y end switch
+GP8  Y STEP
+GP9  Y EN
+GP10 X EN
+GP11 X end switch
+GP12 X DIR
+GP13 X STEP
+GP14 LED console mode
+GP15 LED instruction
+GP17 Button B2
+GP18 Button B1
+GP19 Manual jog Y-
+GP20 Manual jog Y+
+GP21 Manual jog X-
+GP22 Manual jog X+
+
+Unused by the firmware: GP0, GP1, GP16, GP26, GP27, GP28.
+
+Notes
+-----
+- Switches and buttons are wired between the GPIO and GND and use the internal
+  pull-up, so a closed switch reads as pressed.
+- Stepper EN pins are active low (LOW = driver enabled).
+- The manual jog buttons and B1/B2 are only used by manual_instruction(),
+  which is currently commented out in main().
