@@ -1,10 +1,10 @@
 from main import FGenerator
 
-DXF_PATH = r"dxfexamples\vilik.dxf"
+DXF_PATH = r"dxfexamples\pcb_case.dxf"
 
 def from_dxf() -> None:
     # create a generating object (optimize=True reorders paths to minimize pen travel)
-    gen = FGenerator(DXF_PATH, acc=0.1, vis_scale=10, text=True, optimize=True, join_tol=0.5)
+    gen = FGenerator(DXF_PATH, acc=0.1, vis_scale=10, text=True, optimize=True, join_tol=0.1)
 
     # generate the FCODE from the provided dxf file
     gen.generate_instructions()

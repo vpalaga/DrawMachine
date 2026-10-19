@@ -23,7 +23,7 @@ class FGenerator:
       empty and you drive the pen yourself with ``pen_up``, ``pen_down``,
       ``move_to``, ``travel_to``, ``draw_to``, ``draw_polyline`` and ``wait``.
 
-    A source counts as a DXF when it ends in ``.dxf``; anything else is used as
+    A source counts as a DXF when it ends in ".dxf"; anything else is used as
     the name of the future FCODE file.
     """
 
@@ -37,8 +37,8 @@ class FGenerator:
         optimize: bool = True,
         center: bool = True,
         join_tol: float = 1e-4,
-        head_calibration_after_instruction:int = 500,
-        overall_calibration_after_instruction:int = 2000
+        head_calibration_after_instruction:int = 200,
+        overall_calibration_after_instruction:int = 1000
     ) -> None:
         source_str = str(source)
         self.from_dxf: bool = Path(source_str).suffix.lower() == ".dxf"
