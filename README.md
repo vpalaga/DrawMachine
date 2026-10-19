@@ -34,6 +34,7 @@ flowchart LR
 | `FCODEgenerator/dxfexamples/` | Sample DXF files to try |
 | `DataSendToPico/` | Host-side sender: file runner, mm to steps conversion, serial transport, test CLI and GUI (Python) |
 | `StepperDriver-pico/` | Pico firmware (C++ / Pico SDK) |
+| `StepperDriver-pico/Pico_pins_map.txt` | ASCII Pico pinout showing which GPIO does what |
 | `StepperDriver-pico/bresenham_test.py` | Draws the step pattern of the line algorithm with PIL, used to design the move function |
 | `pcb/2.0/DrawMv2.0/` | **Current board**: KiCad project for the v2.0 controller PCB |
 | `pcb/test/` | Retired first prototype board (v1), kept for reference only |
@@ -54,6 +55,8 @@ flowchart LR
 - **Board extras (v2.0):** 6 A fuse and bulk capacitor on the motor supply, status LEDs and a debug header.
 
 ### Pin map (from `motorDriver.cpp`)
+
+A full ASCII drawing of the Pico with every pin is in [`StepperDriver-pico/Pico_pins_map.txt`](StepperDriver-pico/Pico_pins_map.txt).
 
 | Function | GPIO |
 | --- | --- |
@@ -263,7 +266,6 @@ The v1 prototype in `pcb/test/` is no longer used and is kept only for reference
 - [ ] `MotorController.wait()` builds its command with `"WAT " + secs`, which raises a `TypeError` because `secs` is a float. Use `str(secs)`.
 - [ ] `FCODE.save()` does not create the output folder. `.fcodes/` must exist or saving fails.
 - [ ] `Transmitter` in `CDC_send.py` looks for the Pico when the module is imported, so the Pico has to be plugged in before you import it.
-- [ ] `Pico_pins_map.txt` is out of date and does not match the pins in `motorDriver.cpp`. Use the table above.
 - [ ] `StepperDriver.cpp` assumes 1000 steps per revolution when printing head position, while the host assumes 1600 (8 x 200). Positions printed by the firmware will not match.
 - [ ] Manual jog buttons are implemented (`manual_instruction()`) but the call in the main loop is commented out.
 - [ ] `use_example.py` contains a hard-coded Windows path, and `example_from_dxf.py.py` has a double extension and a Windows-style path separator.

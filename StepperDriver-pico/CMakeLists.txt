@@ -42,6 +42,7 @@ add_executable(motorDriver
     drivers/Led.cpp
     drivers/Stepper.cpp
     drivers/StepperDriver.cpp
+    drivers/Head.cpp
 )
 
 pico_set_program_name(motorDriver "motorDriver")
@@ -69,4 +70,3 @@ target_link_libraries(motorDriver
         )
 
 pico_add_extra_outputs(motorDriver)
-

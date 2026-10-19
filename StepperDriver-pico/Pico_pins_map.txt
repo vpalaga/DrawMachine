@@ -49,6 +49,7 @@ GP21 Manual jog X-
 GP22 Manual jog X+
 
 Unused by the firmware: GP0, GP1, GP16, GP26, GP27, GP28.
+GP0, GP1 are ready for later uart usage
 
 Notes
 -----

@@ -7,13 +7,6 @@
 StepperDriver::StepperDriver(Stepper::stepper_pins pins_x, Stepper::stepper_pins pins_y)
         : xStepperMotor(pins_x),
           yStepperMotor(pins_y) {
-    const int STEPS_P_ROT = 1000;
-    const int ROD_PITCH_mm = 2;
-
-    // assign the MEMBERS (before, local constants shadowed them and the members stayed uninitialized)
-    USE_SPROFILE_FROM_STEPS = 200;
-    const int STEPS_P_1MM = STEPS_P_ROT / ROD_PITCH_mm;
-    MM_p_STEP = 1.0 / STEPS_P_1MM;
 }
 
 void StepperDriver::move(int x, int y){

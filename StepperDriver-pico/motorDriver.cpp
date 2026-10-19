@@ -16,7 +16,7 @@
 #include "drivers/Led.h"
 #include "drivers/StepperDriver.h" 
 #include "drivers/SwitchButton.h"
-#include "drivers/Stepper.h"
+#include "drivers/Head.h"
 
 using namespace std;
 
@@ -37,6 +37,7 @@ const map<string, size_t> INSTRUCTION_SIZES = {
     {"PUP", 0}, // 
     {"PDN", 0}, // 
     {"SCM", 1}, // mode (0,1,2)
+    {"SMS", 2}, // set motor speed (xy, z)
     {"HCB", 0} // head calibrate
 };
 //=============================================================
@@ -52,7 +53,7 @@ SwitchButton mSwich_B2(17);
 // end swiches, use with calibrate
 SwitchButton xSwich(11);
 SwitchButton ySwich(7);
-SwitchButton zSwich(2); 
+const int z_endstop_pin = 2;
 
 // leds
 Led instructionLed(15);
@@ -64,9 +65,8 @@ Stepper::stepper_pins y_stepper_pins = {8, 6, 9};
 Stepper::stepper_pins z_stepper_pins = {4, 3, 5}; 
 
 struct Settings {
-    const uint16_t z_stepper_us_sleep = 100; 
     const int pen_up_down_steps = 6500; // needs to be tested 
-    const int INSTRUCION_TIMEOUT_MS = 3000; 
+    const int INSTRUCTION_TIMEOUT_MS = 3000;
     const uint16_t x_y_halfcycle_us_sleep = 75;
     // safety limits so calibration can never run forever if a switch is missing / miswired
     const int max_calibrate_steps_xy = 400000;
@@ -75,49 +75,7 @@ struct Settings {
 
 
 StepperDriver stepper_driver(x_stepper_pins, y_stepper_pins);
-Stepper z_stepper(z_stepper_pins);
-
-// direction values for Stepper::stepOnce (same mapping as Stepper::move: steps>=0 -> false, steps<0 -> true)
-const bool Z_UP   = false;
-const bool Z_DOWN = true;
-
-// returns false = ok, true = failed (end switch never reached / never released)
-bool z_stepper_calibrate(){
-    bool failed = false;
-    int guard = 0;
-
-    //enable the motor
-    z_stepper.enable(true);
-
-    // if the head is already in switch conduct position, move down until it is released
-    // (outer loop re-checks after a short pause, so a bouncing switch is not mistaken for released;
-    //  both loops test !failed, so hitting the step limit really leaves them)
-    while (!failed && zSwich.getSwichState()){
-        while (!failed && zSwich.getSwichState()){
-            if (++guard > settings.max_calibrate_steps_z){failed = true; break;}
-            z_stepper.stepOnce(Z_DOWN, settings.z_stepper_us_sleep);
-            ledConsoleMode.setState(zSwich.getSwichState());
-        }
-        sleep_ms(5);
-    }
-
-    // move up until the switch conducts
-    guard = 0;
-    while (!failed && !zSwich.getSwichState()){
-        while (!failed && !zSwich.getSwichState()){
-            if (++guard > settings.max_calibrate_steps_z){failed = true; break;}
-            z_stepper.stepOnce(Z_UP, settings.z_stepper_us_sleep);
-            ledConsoleMode.setState(zSwich.getSwichState());
-        }
-        sleep_ms(5);
-    }
-
-    ledConsoleMode.setState(zSwich.getSwichState());
-
-    if (!failed) stepper_driver.is_pen_down = false;
-    z_stepper.enable(false); // disenable
-    return failed;
-}
+Head head(z_stepper_pins, z_endstop_pin, ledConsoleMode);
 
 class Instructions{
 public:
@@ -158,37 +116,29 @@ public:
 
         // z calib
 
-        return z_stepper_calibrate();
+        return head.calibrate(settings.max_calibrate_steps_z);
     }
 
     static bool head_calibrate(){
-        return z_stepper_calibrate();
+        return head.calibrate(settings.max_calibrate_steps_z);
     }
 
     static bool pen_up(){
-        // check last known pen pos
-        if (!stepper_driver.is_pen_down){return true;}
-
-        // move +z direction
-        z_stepper.move(settings.pen_up_down_steps, settings.z_stepper_us_sleep);
-        stepper_driver.is_pen_down = false;
-
-        return false;
+        return head.penUp(settings.pen_up_down_steps);
     }
     
     static bool pen_down(){
-        // check last known pen pos
-        if (stepper_driver.is_pen_down){return true;}
-
-        // move -z direction
-        z_stepper.move(- settings.pen_up_down_steps, settings.z_stepper_us_sleep);
-        stepper_driver.is_pen_down = true;
-
-        return false;
+        return head.penDown(settings.pen_up_down_steps);
     }
 
     static bool set_instruction_mode(uint8_t mode){
         consoleEnabled = mode;
+        return false;
+    }
+
+    static bool set_motor_speed(int xy_sleep_us, int z_sleep){
+        stepper_driver.motor_sleep_us = xy_sleep_us;
+        head.setSpeed(z_sleep);
         return false;
     }
 };
@@ -236,18 +186,18 @@ void process_received(const string& buf, int len) {
     // return false (0): the message is OK 
     // return true  (1): the message is unsable
     string instructionType;
-    vector<float> instructionArgunments;
+    vector<float> args;
 
     // state of recived message
     bool recivedMessageState = false;
 
-    if (!parse_instruction(buf, instructionType, instructionArgunments)){
+    if (!parse_instruction(buf, instructionType, args)){
         recivedMessageState = true; // empty line or bad number
     } else {
         auto it = INSTRUCTION_SIZES.find(instructionType);
         if (it == INSTRUCTION_SIZES.end()){        // unknown instruction
             recivedMessageState = true;
-        } else if (it->second != instructionArgunments.size()){ // wrong argument count
+        } else if (it->second != args.size()){ // wrong argument count
             recivedMessageState = true;
         }
     }
@@ -257,36 +207,28 @@ void process_received(const string& buf, int len) {
 
     if (recivedMessageState) return; // an error has happened
 
-    // paths to different instructions
-    bool instructionFinished = true;
-    
-    if          (instructionType=="MOV"){
-    
-        instructionFinished = Instructions::move((int)instructionArgunments[0], (int)instructionArgunments[1]);
-    
-    } else if   (instructionType=="CLB"){
-        // calibrate
-        instructionFinished = Instructions::calibrate();
+    bool failed = true;  // default: unknown instruction = unusable
 
-    } else if   (instructionType=="WAT"){
-        // wait x seconds
-        instructionFinished = Instructions::wait(instructionArgunments[0]);
-
-    } else if (instructionType=="PUP"){
-        instructionFinished = Instructions::pen_up();
-    } else if (instructionType=="PDN"){
-        instructionFinished = Instructions::pen_down();  
-    
-    } else if (instructionType=="SCM"){
-        // mode
-        instructionFinished = Instructions::set_instruction_mode((uint8_t)instructionArgunments[0]);
-    } else if (instructionType=="HCB"){
-        instructionFinished = Instructions::head_calibrate();
+    if (instructionType == "MOV") {
+        failed = Instructions::move((int)args[0], (int)args[1]);
+    } else if (instructionType == "CLB") {
+        failed = Instructions::calibrate();
+    } else if (instructionType == "WAT") {
+        failed = Instructions::wait(args[0]);
+    } else if (instructionType == "PUP") {
+        failed = Instructions::pen_up();
+    } else if (instructionType == "PDN") {
+        failed = Instructions::pen_down();
+    } else if (instructionType == "SCM") {
+        failed = Instructions::set_instruction_mode((uint8_t)args[0]);
+    } else if (instructionType == "SMS") {
+        failed = Instructions::set_motor_speed((int)args[0], (int)args[1]);
+    } else if (instructionType == "HCB") {
+        failed = Instructions::head_calibrate();
     }
 
-
     // send out if the instruction was run wihtout problems, false=good, true=unusable 
-    confirm_recive(instructionFinished);
+    confirm_recive(failed);
 }
 
 void manual_instruction(){
@@ -396,14 +338,13 @@ int main()
 
     // real time based timeout (instead of counting loop iterations)
     absolute_time_t last_instruction_time = get_absolute_time();
-    const int64_t timeout_us = (int64_t)settings.INSTRUCION_TIMEOUT_MS * 1000;
+    const int64_t timeout_us = (int64_t)settings.INSTRUCTION_TIMEOUT_MS * 1000;
 
     while (true) { // CDC loop
         
         if (CDC_loop()){last_instruction_time = get_absolute_time();}
-        //ledConsoleMode.setState(zSwich.getSwichState());
 
-        sleep_ms(1); // bottle neck, ignore for now
+        sleep_ms(1); // bottleneck, ignore for now
 
         if (absolute_time_diff_us(last_instruction_time, get_absolute_time()) > timeout_us){
             // enable manual control
