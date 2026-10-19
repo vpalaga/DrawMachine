@@ -75,7 +75,7 @@ struct Settings {
 
 
 StepperDriver stepper_driver(x_stepper_pins, y_stepper_pins);
-Head head(z_stepper_pins, z_endstop_pin, ledConsoleMode);
+Head head(z_stepper_pins, z_endstop_pin);
 
 class Instructions{
 public:

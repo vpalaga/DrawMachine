@@ -1,10 +1,9 @@
 #include "Head.h"
 #include "pico/stdlib.h"
 
-Head::Head(Stepper::stepper_pins stepperPins, int endstopPin, Led& calibrationIndicator)
+Head::Head(Stepper::stepper_pins stepperPins, int endstopPin)
         : stepper(stepperPins),
-          endstop(endstopPin),
-          calibrationIndicator(calibrationIndicator) {
+          endstop(endstopPin) {
 }
 
 bool Head::moveUntilEndstopState(bool targetState, bool direction, int maxSteps) {
@@ -17,7 +16,6 @@ bool Head::moveUntilEndstopState(bool targetState, bool direction, int maxSteps)
 
             stepper.stepOnce(direction, stepSleepUs);
             ++steps;
-            calibrationIndicator.setState(endstop.getSwichState());
         }
 
         sleep_ms(5);
@@ -33,7 +31,6 @@ bool Head::calibrate(int maxSteps) {
     bool calibrated = moveUntilEndstopState(false, Z_DOWN, maxSteps)
                    && moveUntilEndstopState(true, Z_UP, maxSteps);
 
-    calibrationIndicator.setState(endstop.getSwichState());
     stepper.enable(false);
     if (calibrated) {
         penDownState = false;

@@ -1,13 +1,12 @@
 #ifndef HEAD_H
 #define HEAD_H
 
-#include "Led.h"
 #include "Stepper.h"
 #include "SwitchButton.h"
 
 class Head {
 public:
-    Head(Stepper::stepper_pins stepperPins, int endstopPin, Led& calibrationIndicator);
+    Head(Stepper::stepper_pins stepperPins, int endstopPin);
 
     bool calibrate(int maxSteps);
     bool penUp(int steps);
@@ -23,7 +22,6 @@ private:
 
     Stepper stepper;
     SwitchButton endstop;
-    Led& calibrationIndicator;
     int stepSleepUs = 100;
     bool penDownState = false;
 };

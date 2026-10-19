@@ -36,5 +36,8 @@ class Controller:
                     self.motor_driver.headCalibrate()
                 case "WAT":
                     self.motor_driver.wait(float(current_instruction[1]))
+                case "SMS":
+                    self.motor_driver.setMotorSpeed(int(float(current_instruction[1])),
+                                                    int(float(current_instruction[2])))
                 case "HOM":
                     self.motor_driver.home()

@@ -225,6 +225,15 @@ class FGenerator:
         """Insert a WAT instruction."""
         self.file.add_instruction(Instruction("WAT", amount))
 
+    def set_motor_speed(self, xy_sleep_us: int, z_sleep_us: int) -> None:
+        """Insert an SMS instruction.
+
+        xy_sleep_us controls the X/Y motor half-cycle sleep on the Pico.
+        z_sleep_us controls the Z/head motor speed on the Pico.
+        Lower values usually mean faster movement.
+        """
+        self.file.add_instruction(Instruction("SMS", xy_sleep_us, z_sleep_us))
+
     def head_calibrate(self):
         self.file.add_instruction(Instruction("HCB"))
         self._pen_is_down = False # moves it up

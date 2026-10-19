@@ -126,6 +126,20 @@ class MotorController:
         RequestFailCheck(receive_state, finish_state)
 
     @RequestReport
+    def setMotorSpeed(self, xy_sleep_us: int, z_sleep_us: int) -> None:
+        """Set motor speed on the Pico.
+
+        Args:
+            xy_sleep_us: X/Y motor half-cycle sleep in microseconds.
+            z_sleep_us: Z/head motor sleep in microseconds.
+        """
+        receive_state = self.transmitter.send_and_receive(
+            "SMS " + str(int(xy_sleep_us)) + " " + str(int(z_sleep_us)) + "\n"
+        )
+        finish_state = self.transmitter.send_and_receive(None)  # wait for finish
+        RequestFailCheck(receive_state, finish_state)
+
+    @RequestReport
     def wait(self, secs):
         receive_state = self.transmitter.send_and_receive("WAT " + str(secs) + "\n")
         finish_state = self.transmitter.send_and_receive(None) # wait for finish
