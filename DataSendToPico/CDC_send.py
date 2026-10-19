@@ -3,13 +3,6 @@ import serial.tools.list_ports
 import time
 import settings as s
 from tools import t
-import winsound
-
-def beep():
-    frequency = 2500  # Set Frequency To 2500 Hertz
-    duration = 200  # Set Duration To 1000 ms == 1 second
-    winsound.Beep(frequency, duration)
-
 
 class FormatError(Exception):
     def __init__(self, message):
@@ -119,11 +112,6 @@ class Transmitter:
         print("OK: Pico Console: ")
         while True:
             pico_ret = self.send_and_receive(None)
-            if switch_beep:
-                switches = [int(i) for i in pico_ret.strip().split(",")]
-                if 0 in switches:
-                    beep()
-
             print(str(t()) + ": " + str(pico_ret))
 
     def __deinit__(self):
