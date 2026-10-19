@@ -1,8 +1,8 @@
 import serial
 import serial.tools.list_ports
 import time
-import settings as s
-from tools import t
+import src.settings as s
+from src.tools import t
 
 class FormatError(Exception):
     def __init__(self, message):

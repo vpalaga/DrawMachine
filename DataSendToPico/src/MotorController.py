@@ -1,7 +1,7 @@
-from MotorOverclass import StepperMotor
-from CDC_send import Transmitter
-from tools import RequestReport, RequestFailCheck
-import settings
+from src.MotorOverclass import StepperMotor
+from src.CDC_send import Transmitter
+from src.tools import RequestReport, RequestFailCheck
+
 
 class MotorOutOfRangeError(Exception):#
     def __init__(self, motor:StepperMotor, difference:float|int):
@@ -17,6 +17,7 @@ class MotorController:
     }
 
     home_position:tuple[int,int] = (0, 200) # mm from 0,0
+    motor_speeds:tuple[int,int] = (65, 100) # ms xy, z
 
     def __init__(self, move_format="A4"):
 
@@ -34,6 +35,11 @@ class MotorController:
         #    self.starting_offset = move_format
 
         # calib
+        self.on_startup()
+
+    def on_startup(self)->None:
+        self.setMotorSpeed(*self.motor_speeds)
+        self.headCalibrate()
         self.calibrate()
 
     @RequestReport
@@ -82,7 +88,7 @@ class MotorController:
     @RequestReport
     def home(self)->None:
         self.headCalibrate()
-        self.move_to_mm(*MotorController.home_position)
+        self.move_to_mm(*self.home_position)
 
 
     def step_move(self, x:int, y:int)->None:

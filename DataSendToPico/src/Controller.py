@@ -1,4 +1,4 @@
-from MotorController import MotorController
+from src.MotorController import MotorController
 
 class Controller:
     
@@ -19,7 +19,7 @@ class Controller:
         for i, line in enumerate(self.instructions[header_size:]): # skip from after the header
             current_instruction:list[str] = line.split(" ")
             
-            instruction_type:str = current_instruction[0]
+            instruction_type:str = current_instruction[0].strip()
             print(f"Instruction: {i:>{instructions_len_string_len}}/{instructions_len}")
 
             match instruction_type:

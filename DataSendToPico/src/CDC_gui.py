@@ -129,7 +129,7 @@ class DrawMachineGui(tk.Tk):
         try:
             # imported here so the GUI still opens when no Pico is plugged in
             # (CDC_send searches for the Pico as soon as it is imported)
-            from CDC_send import Transmitter
+            from src.CDC_send import Transmitter
             tx = Transmitter(console=False)
             self.q.put(("connected", tx))
         except Exception as e:
