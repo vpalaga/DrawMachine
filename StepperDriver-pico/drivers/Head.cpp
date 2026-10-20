@@ -25,11 +25,11 @@ bool Head::moveUntilEndstopState(bool targetState, bool direction, int maxSteps)
     }
 }
 
-bool Head::calibrate(int maxSteps) {
+bool Head::calibrate() {
     stepper.enable(true);
     sleep_ms(10);
-    bool calibrated = moveUntilEndstopState(false, Z_DOWN, maxSteps)
-                   && moveUntilEndstopState(true, Z_UP, maxSteps);
+    bool calibrated = moveUntilEndstopState(false, Z_DOWN, max_calibrate_steps_z)
+                   && moveUntilEndstopState(true, Z_UP, max_calibrate_steps_z);
 
     stepper.enable(false);
     if (calibrated) {
@@ -75,7 +75,7 @@ void Head::setSpeed(int sleepUs) {
 }
 
 bool Head::setMoveStepsUp(int steps) {
-    if (steps <= 0) {
+    if (steps <= 0 || steps > max_calibrate_steps_z) {
         return true;
     }
 

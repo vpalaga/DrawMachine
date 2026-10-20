@@ -14,7 +14,7 @@ public:
     StepperDriver(Stepper::stepper_pins pins_x, Stepper::stepper_pins pins_y,
                   int xEndstopPin, int yEndstopPin);
     void move(int x, int y);
-    bool calibrate(int maxSteps);
+    bool calibrate();
     // steppers are taken by reference so the direction cache of the real motor is used
     void bresenham(Stepper& leadStepper, Stepper& followStepper, int lead, int follow, bool leadDir, bool followDir);
     void enable(bool setState);
@@ -27,6 +27,8 @@ public:
     int y_pos = 0;
 
 private:
+    static constexpr int max_calibrate_steps_xy = 400000;
+
     Stepper xStepperMotor;
     Stepper yStepperMotor;
     SwitchButton xEndstop;

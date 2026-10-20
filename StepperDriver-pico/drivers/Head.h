@@ -8,7 +8,7 @@ class Head {
 public:
     Head(Stepper::stepper_pins stepperPins, int endstopPin);
 
-    bool calibrate(int maxSteps);
+    bool calibrate();
     bool penUp();
     bool penDown();
     bool isPenDown() const;
@@ -19,6 +19,7 @@ public:
 private:
     static constexpr bool Z_UP = false;
     static constexpr bool Z_DOWN = true;
+    static constexpr int max_calibrate_steps_z = 50000;
     int move_steps_up = 6500;
     static constexpr int fixed_up_percent = 95;
     static constexpr int switch_seek_extra_percent = 20;

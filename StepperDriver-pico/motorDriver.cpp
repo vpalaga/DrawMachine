@@ -67,9 +67,6 @@ Stepper::stepper_pins z_stepper_pins = {4, 3, 5};
 
 struct Settings {
     const int INSTRUCTION_TIMEOUT_MS = 3000;
-    // safety limits so calibration can never run forever if a switch is missing / miswired
-    const int max_calibrate_steps_xy = 400000;
-    const int max_calibrate_steps_z  = 50000;
 }settings;
 
 
@@ -93,11 +90,11 @@ public:
     }
 
     static bool calibrate(){
-        return stepper_driver.calibrate(settings.max_calibrate_steps_xy);
+        return stepper_driver.calibrate();
     }
 
     static bool head_calibrate(){
-        return head.calibrate(settings.max_calibrate_steps_z);
+        return head.calibrate();
     }
 
     static bool pen_up(){
@@ -120,8 +117,7 @@ public:
     }
 
     static bool set_z_steps(float steps){
-        if (!std::isfinite(steps) || steps < 1 || steps > settings.max_calibrate_steps_z
-                || std::floor(steps) != steps) {
+        if (!std::isfinite(steps) || steps < 1 || std::floor(steps) != steps) {
             return true;
         }
         return head.setMoveStepsUp(static_cast<int>(steps));

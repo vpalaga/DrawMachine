@@ -32,12 +32,12 @@ void StepperDriver::move(int x, int y){
 
 }
 
-bool StepperDriver::calibrate(int maxSteps) {
+bool StepperDriver::calibrate() {
     enable(true);
 
     int steps = 0;
     while (!xEndstop.getSwichState() && !yEndstop.getSwichState()) {
-        if (++steps > maxSteps) {
+        if (++steps > max_calibrate_steps_xy) {
             enable(false);
             return true;
         }
@@ -46,7 +46,7 @@ bool StepperDriver::calibrate(int maxSteps) {
 
     steps = 0;
     while (!xEndstop.getSwichState()) {
-        if (++steps > maxSteps) {
+        if (++steps > max_calibrate_steps_xy) {
             enable(false);
             return true;
         }
@@ -55,7 +55,7 @@ bool StepperDriver::calibrate(int maxSteps) {
 
     steps = 0;
     while (!yEndstop.getSwichState()) {
-        if (++steps > maxSteps) {
+        if (++steps > max_calibrate_steps_xy) {
             enable(false);
             return true;
         }
