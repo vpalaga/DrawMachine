@@ -53,8 +53,8 @@ SwitchButton mSwich_B2(17);
 
 // end switches, used by the axis drivers during calibration
 const int x_endstop_pin = 11;
-const int y_endstop_pin = 7;
-const int z_endstop_pin = 2;
+const int y_endstop_pin = 2;
+const int z_endstop_pin = 7;
 
 // leds
 Led instructionLed(15);
@@ -83,7 +83,7 @@ public:
     }
 
     static bool move(int x, int y){
-
+        stepper_driver.enable(true);
         stepper_driver.move(x, y);
         
         return false; // move 
@@ -191,7 +191,6 @@ void process_received(const string& buf, int len) {
     bool failed = true;  // default: unknown instruction = unusable
 
     if (instructionType == "MOV") {
-        stepper_driver.enable(true);
         failed = Instructions::move((int)args[0], (int)args[1]);
     } else if (instructionType == "CLB") {
         failed = Instructions::calibrate();
@@ -334,7 +333,7 @@ int main()
             instructionLed.setState(false);
             stepper_driver.enable(false);
 
-            //manual_instruction();
+            manual_instruction();
         } else {
             // an instruction was received recently
             instructionLed.setState(true);

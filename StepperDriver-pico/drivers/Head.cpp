@@ -42,6 +42,8 @@ bool Head::penUp() {
     const int fixedUpSteps = move_steps_up * fixed_up_percent / 100;
     const int switchSeekSteps = move_steps_up * (100 - fixed_up_percent + switch_seek_extra_percent) / 100;
 
+    sleep_ms(500);
+
     stepper.enable(true);
     for (int step = 0; step < fixedUpSteps; ++step) {
         stepper.stepOnce(Z_UP, stepSleepUs);

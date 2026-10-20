@@ -29,7 +29,6 @@ void StepperDriver::move(int x, int y){
     } else {
         bresenham(yStepperMotor, xStepperMotor, y, x, y_dir, x_dir);
     }
-
 }
 
 bool StepperDriver::calibrate() {

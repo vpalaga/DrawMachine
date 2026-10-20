@@ -22,7 +22,7 @@ private:
     static constexpr int max_calibrate_steps_z = 50000;
     int move_steps_up = 6500;
     static constexpr int fixed_up_percent = 95;
-    static constexpr int switch_seek_extra_percent = 20;
+    static constexpr int switch_seek_extra_percent = 60;
 
     bool moveUntilEndstopState(bool targetState, bool direction, int maxSteps);
 

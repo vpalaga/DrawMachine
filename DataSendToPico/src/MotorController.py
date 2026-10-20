@@ -17,7 +17,7 @@ class MotorController:
     }
 
     home_position:tuple[int,int] = (0, 200) # mm from 0,0
-    motor_speeds:tuple[int,int] = (65, 100) # ms xy, z
+    motor_speeds:tuple[int,int] = (75, 100) # ms xy, z
 
     def __init__(self, move_format="A4"):
 

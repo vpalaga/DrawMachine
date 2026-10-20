@@ -199,7 +199,7 @@ class FGenerator:
 
     def travel_to(self, x: float, y: float) -> None:
         """Lift the pen and move to (x, y) without drawing."""
-        self.pen_up()
+        self.head_calibrate()
         self.move_to(x, y)
 
     def draw_to(self, x: float, y: float) -> None:
@@ -240,6 +240,7 @@ class FGenerator:
 
     def head_calibrate(self):
         self.file.add_instruction(Instruction("HCB"))
+        self.vis.penup()
         self._pen_is_down = False # moves it up
 
     def calibrate(self):

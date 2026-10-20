@@ -22,9 +22,9 @@ class Visual:
     """
 
     DRAW_COLOR: Color = (0, 0, 0)
-    DRAW_THICKNESS: int = 5
+    DRAW_THICKNESS: int = 3
     TRAVEL_COLOR: Color = (255, 0, 0)
-    TRAVEL_THICKNESS:int = 2
+    TRAVEL_THICKNESS:int = 1
     PAPER_COLOR: Color = (0, 120, 255)
 
     def __init__(
