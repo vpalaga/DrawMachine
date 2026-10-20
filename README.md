@@ -262,6 +262,5 @@ The v1 prototype in `pcb/test/` is no longer used and is kept only for reference
 
 ## Known issues and to-do
 
-- [ ] `Transmitter` in `CDC_send.py` looks for the Pico when the module is imported, so the Pico has to be plugged in before you import it.
 - [ ] Standard G-code support, which would be easier than maintaining FCODE.
 - [ ] Pen-up calibration is not reliable and needs investigation.
