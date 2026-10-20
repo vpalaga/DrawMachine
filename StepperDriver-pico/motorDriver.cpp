@@ -51,9 +51,9 @@ SwitchButton mSwich_YM(19);
 SwitchButton mSwich_B1(18);
 SwitchButton mSwich_B2(17);
 
-// end swiches, use with calibrate
-SwitchButton xSwich(11);
-SwitchButton ySwich(7);
+// end switches, used by the axis drivers during calibration
+const int x_endstop_pin = 11;
+const int y_endstop_pin = 7;
 const int z_endstop_pin = 2;
 
 // leds
@@ -73,7 +73,7 @@ struct Settings {
 }settings;
 
 
-StepperDriver stepper_driver(x_stepper_pins, y_stepper_pins);
+StepperDriver stepper_driver(x_stepper_pins, y_stepper_pins, x_endstop_pin, y_endstop_pin);
 Head head(z_stepper_pins, z_endstop_pin);
 
 class Instructions{
@@ -93,32 +93,7 @@ public:
     }
 
     static bool calibrate(){
-
-        stepper_driver.enable(true);
-        
-        int guard = 0;
-
-        while ((!xSwich.getSwichState()) && (!ySwich.getSwichState())){ // dosnt conduct
-            if (++guard > settings.max_calibrate_steps_xy){stepper_driver.enable(false); return true;}
-            stepper_driver.move(-1, -1); // move one step x and y back (-)
-        }
-        guard = 0;
-        while (!xSwich.getSwichState()){ // dosnt conduct
-            if (++guard > settings.max_calibrate_steps_xy){stepper_driver.enable(false); return true;}
-            stepper_driver.move(-1, 0); // move one step x back (-)
-        }
-        guard = 0; 
-
-        while (!ySwich.getSwichState()){ // dosnt conduct
-            if (++guard > settings.max_calibrate_steps_xy){stepper_driver.enable(false); return true;}
-            stepper_driver.move(0, -1); // move one step y back (-)
-        }
-        // reset stepper pos
-        stepper_driver.pos_reset();
-
-        // z calib
-
-        return head.calibrate(settings.max_calibrate_steps_z);
+        return stepper_driver.calibrate(settings.max_calibrate_steps_xy);
     }
 
     static bool head_calibrate(){
@@ -259,8 +234,8 @@ void manual_instruction(){
         x_move--;
         if(consoleEnabled == 1){
             printf("B2 (xm): pressed\n");
-            printf("x: %d\n", xSwich.getSwichState());
-            printf("y: %d\n", ySwich.getSwichState());
+            printf("x: %d\n", stepper_driver.xEndstopState());
+            printf("y: %d\n", stepper_driver.yEndstopState());
             sleep_ms(20);
         }    
     }

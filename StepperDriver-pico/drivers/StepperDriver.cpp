@@ -4,9 +4,12 @@
 #include <cmath>
 #include <cstdlib>
 
-StepperDriver::StepperDriver(Stepper::stepper_pins pins_x, Stepper::stepper_pins pins_y)
+StepperDriver::StepperDriver(Stepper::stepper_pins pins_x, Stepper::stepper_pins pins_y,
+                             int xEndstopPin, int yEndstopPin)
         : xStepperMotor(pins_x),
-          yStepperMotor(pins_y) {
+          yStepperMotor(pins_y),
+          xEndstop(xEndstopPin),
+          yEndstop(yEndstopPin) {
 }
 
 void StepperDriver::move(int x, int y){
@@ -27,6 +30,40 @@ void StepperDriver::move(int x, int y){
         bresenham(yStepperMotor, xStepperMotor, y, x, y_dir, x_dir);
     }
 
+}
+
+bool StepperDriver::calibrate(int maxSteps) {
+    enable(true);
+
+    int steps = 0;
+    while (!xEndstop.getSwichState() && !yEndstop.getSwichState()) {
+        if (++steps > maxSteps) {
+            enable(false);
+            return true;
+        }
+        move(-1, -1);
+    }
+
+    steps = 0;
+    while (!xEndstop.getSwichState()) {
+        if (++steps > maxSteps) {
+            enable(false);
+            return true;
+        }
+        move(-1, 0);
+    }
+
+    steps = 0;
+    while (!yEndstop.getSwichState()) {
+        if (++steps > maxSteps) {
+            enable(false);
+            return true;
+        }
+        move(0, -1);
+    }
+
+    pos_reset();
+    return false;
 }
 
 void StepperDriver::bresenham(Stepper& leadStepper, Stepper& followStepper, int lead, int follow, bool leadDir, bool followDir){
@@ -77,4 +114,12 @@ void StepperDriver::pos_reset(){
 
 void StepperDriver::printPosToTermial(){
     printf("head pos: X: %.4fmm, Y: %.4fmm \n", (x_pos * MM_p_STEP), (y_pos * MM_p_STEP));
+}
+
+bool StepperDriver::xEndstopState(){
+    return xEndstop.getSwichState();
+}
+
+bool StepperDriver::yEndstopState(){
+    return yEndstop.getSwichState();
 }
