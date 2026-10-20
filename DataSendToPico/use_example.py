@@ -1,5 +1,8 @@
-from DataSendToPico.src.Controller import Controller
+from pathlib import Path
 
-cont = Controller(r'C:\Users\vit\OneDrive\Documents\GitHub\DrawMachine\FCODEgenerator\.fcodes\pcb_case.FCODE')
+from src.Controller import Controller
+
+fcode_path = Path(__file__).resolve().parents[1] / "FCODEgenerator" / ".fcodes" / "pcb_case.FCODE"
+cont = Controller(str(fcode_path))
 
 cont.do_file()

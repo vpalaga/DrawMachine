@@ -41,10 +41,10 @@ class FCODE:
         self.instructions.append(instruction)
 
     def save(self, path: Path) -> Path:
-        """Write the FCODE file. Defaults to '<name>.FCODE' in the working
-        directory. Returns the path that was written."""
+        """Write the FCODE file, creating the output directory if needed."""
 
-        target:Path = path / f"{self.name}.FCODE"
+        path.mkdir(parents=True, exist_ok=True)
+        target = path / f"{self.name}.FCODE"
         print(target.absolute())
 
         with open(target.absolute(), "w", encoding="utf-8") as file:

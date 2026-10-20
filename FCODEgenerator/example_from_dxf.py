@@ -1,6 +1,9 @@
+from pathlib import Path
+
 from main import FGenerator
 
-DXF_PATH = r"dxfexamples\pcb_case.dxf"
+EXAMPLE_DIR = Path(__file__).resolve().parent
+DXF_PATH = EXAMPLE_DIR / "dxfexamples" / "pcb_case.dxf"
 
 def from_dxf() -> None:
     # create a generating object (optimize=True reorders paths to minimize pen travel)
@@ -10,7 +13,7 @@ def from_dxf() -> None:
     gen.generate_instructions()
 
     # writes '<name>.FCODE' to the working directory; pass output_path="..." to change that
-    gen.save(show_visualization=True)
+    gen.save(show_visualization=True, output_path=EXAMPLE_DIR / ".fcodes")
 
 if __name__ == "__main__":
     from_dxf()

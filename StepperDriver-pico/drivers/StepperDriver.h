@@ -28,6 +28,7 @@ public:
 
 private:
     static constexpr int max_calibrate_steps_xy = 400000;
+    static constexpr double STEPS_PER_MM = 800.0;
 
     Stepper xStepperMotor;
     Stepper yStepperMotor;
@@ -35,7 +36,6 @@ private:
     SwitchButton yEndstop;
 
     int USE_SPROFILE_FROM_STEPS = 200;
-    double MM_p_STEP = 0.002;
 };
 
 #endif

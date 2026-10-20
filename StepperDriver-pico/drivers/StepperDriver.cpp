@@ -112,7 +112,8 @@ void StepperDriver::pos_reset(){
 }
 
 void StepperDriver::printPosToTermial(){
-    printf("head pos: X: %.4fmm, Y: %.4fmm \n", (x_pos * MM_p_STEP), (y_pos * MM_p_STEP));
+    printf("head pos: X: %.4fmm, Y: %.4fmm \n",
+           (x_pos / STEPS_PER_MM), (y_pos / STEPS_PER_MM));
 }
 
 bool StepperDriver::xEndstopState(){

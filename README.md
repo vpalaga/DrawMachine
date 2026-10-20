@@ -94,18 +94,17 @@ Hold **BOOTSEL**, plug the Pico in, and copy `motorDriver.uf2` onto the drive th
 Python **3.10+** is required (the code uses `match` and `X | Y` type hints).
 
 ```bash
-pip install ezdxf numpy pillow pyserial
+pip install -r requirements.txt
 ```
 
 The GUI also needs `tkinter`, which ships with most Python installers.
 
 ### 3. Generate an FCODE file
 
-Run from inside `FCODEgenerator/` (the modules import each other without a package prefix), and create the output folder first:
+Run from inside `FCODEgenerator/` (the modules import each other without a package prefix):
 
 ```bash
 cd FCODEgenerator
-mkdir .fcodes
 ```
 
 ```python
@@ -129,10 +128,8 @@ Plug the Pico in **before** starting Python, then:
 
 ```bash
 cd DataSendToPico
-python -c "from Controller import Controller; Controller('../FCODEgenerator/.fcodes/simpleShape.FCODE').do_file()"
+python use_example.py
 ```
-
-(or edit the path in `use_example.py` and run that).
 
 Creating the controller **homes the machine straight away**: it sends `CLB`, then moves the head to the paper origin. Make sure the carriage has room to move before you run it.
 
@@ -265,11 +262,6 @@ The v1 prototype in `pcb/test/` is no longer used and is kept only for reference
 
 ## Known issues and to-do
 
-- [ ] `MotorController.wait()` builds its command with `"WAT " + secs`, which raises a `TypeError` because `secs` is a float. Use `str(secs)`.
-- [ ] `FCODE.save()` does not create the output folder. `.fcodes/` must exist or saving fails.
 - [ ] `Transmitter` in `CDC_send.py` looks for the Pico when the module is imported, so the Pico has to be plugged in before you import it.
-- [ ] `StepperDriver.cpp` assumes 1000 steps per revolution when printing head position, while the host assumes 1600 (8 x 200). Positions printed by the firmware will not match.
-- [ ] Manual jog buttons are implemented (`manual_instruction()`) but the call in the main loop is commented out.
-- [ ] `use_example.py` contains a hard-coded Windows path, and `example_from_dxf.py.py` has a double extension and a Windows-style path separator.
-- [ ] No `requirements.txt` yet.
 - [ ] Standard G-code support, which would be easier than maintaining FCODE.
+- [ ] Pen-up calibration is not reliable and needs investigation.
