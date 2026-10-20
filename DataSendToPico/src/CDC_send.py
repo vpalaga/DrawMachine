@@ -36,12 +36,11 @@ def find_pico_serial_port():
     raise PicoTimeoutError("ERROR: can't find Pico on any serial ports")
 
 class Transmitter:
-    SERIAL_PORT = find_pico_serial_port()
     BAUDRATE = 115200
     RESPONSE_TIMEOUT_S = 200 # it can take a long time to travel long distance
 
-    def __init__(self, console:bool, port=SERIAL_PORT, baudrate=BAUDRATE):
-        self.SERIAL_PORT = port
+    def __init__(self, console:bool, port: str | None = None, baudrate=BAUDRATE):
+        self.SERIAL_PORT = port if port is not None else find_pico_serial_port()
         self.BAUDRATE = baudrate
 
         self.console_mode = console
@@ -115,5 +114,5 @@ class Transmitter:
             print(str(t()) + ": " + str(pico_ret))
 
     def __deinit__(self):
-        print(f"OK: closing serial port: {Transmitter.SERIAL_PORT}")
+        print(f"OK: closing serial port: {self.SERIAL_PORT}")
         self.ser.close()
