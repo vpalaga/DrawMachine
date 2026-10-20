@@ -234,6 +234,10 @@ class FGenerator:
         """
         self.file.add_instruction(Instruction("SMS", xy_sleep_us, z_sleep_us))
 
+    def set_pen_steps(self, steps: int) -> None:
+        """Set the pen up/down stroke length in steps."""
+        self.file.add_instruction(Instruction("SZS", steps))
+
     def head_calibrate(self):
         self.file.add_instruction(Instruction("HCB"))
         self._pen_is_down = False # moves it up

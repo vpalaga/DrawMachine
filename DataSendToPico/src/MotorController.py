@@ -146,6 +146,13 @@ class MotorController:
         RequestFailCheck(receive_state, finish_state)
 
     @RequestReport
+    def setPenSteps(self, steps: int) -> None:
+        """Set the Z-axis pen stroke length in steps."""
+        receive_state = self.transmitter.send_and_receive(f"SZS {int(steps)}\n")
+        finish_state = self.transmitter.send_and_receive(None)
+        RequestFailCheck(receive_state, finish_state)
+
+    @RequestReport
     def wait(self, secs):
         receive_state = self.transmitter.send_and_receive("WAT " + str(secs) + "\n")
         finish_state = self.transmitter.send_and_receive(None) # wait for finish

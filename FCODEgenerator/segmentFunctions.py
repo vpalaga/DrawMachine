@@ -14,7 +14,8 @@ class Instruction:
         "CLB": 0,
         "HCB": 0,
         "HOM": 0,
-        "SMS": 2
+        "SMS": 2,
+        "SZS": 1
     }
 
     def __init__(self, i_type: str, *args: float, acc: float = 0.01) -> None:

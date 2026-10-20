@@ -38,7 +38,8 @@ const map<string, size_t> INSTRUCTION_SIZES = {
     {"PDN", 0}, // 
     {"SCM", 1}, // mode (0,1,2)
     {"SMS", 2}, // set motor speed (xy, z)
-    {"HCB", 0} // head calibrate
+    {"HCB", 0}, // head calibrate
+    {"SZS", 1} // set Z pen stroke in steps
 };
 //=============================================================
 
@@ -65,7 +66,6 @@ Stepper::stepper_pins y_stepper_pins = {8, 6, 9};
 Stepper::stepper_pins z_stepper_pins = {4, 3, 5}; 
 
 struct Settings {
-    const int pen_up_down_steps = 6500; // needs to be tested 
     const int INSTRUCTION_TIMEOUT_MS = 3000;
     // safety limits so calibration can never run forever if a switch is missing / miswired
     const int max_calibrate_steps_xy = 400000;
@@ -126,11 +126,11 @@ public:
     }
 
     static bool pen_up(){
-        return head.penUp(settings.max_calibrate_steps_z);
+        return head.penUp();
     }
     
     static bool pen_down(){
-        return head.penDown(settings.pen_up_down_steps);
+        return head.penDown();
     }
 
     static bool set_instruction_mode(uint8_t mode){
@@ -142,6 +142,14 @@ public:
         stepper_driver.motor_sleep_us = xy_sleep_us;
         head.setSpeed(z_sleep);
         return false;
+    }
+
+    static bool set_z_steps(float steps){
+        if (!std::isfinite(steps) || steps < 1 || steps > settings.max_calibrate_steps_z
+                || std::floor(steps) != steps) {
+            return true;
+        }
+        return head.setMoveStepsUp(static_cast<int>(steps));
     }
 };
 
@@ -228,6 +236,8 @@ void process_received(const string& buf, int len) {
         failed = Instructions::set_motor_speed((int)args[0], (int)args[1]);
     } else if (instructionType == "HCB") {
         failed = Instructions::head_calibrate();
+    } else if (instructionType == "SZS") {
+        failed = Instructions::set_z_steps(args[0]);
     }
 
     // send out if the instruction was run wihtout problems, false=good, true=unusable 

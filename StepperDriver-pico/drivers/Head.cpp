@@ -38,9 +38,16 @@ bool Head::calibrate(int maxSteps) {
     return !calibrated;
 }
 
-bool Head::penUp(int maxSteps) {
+bool Head::penUp() {
+    const int fixedUpSteps = move_steps_up * fixed_up_percent / 100;
+    const int switchSeekSteps = move_steps_up * (100 - fixed_up_percent + switch_seek_extra_percent) / 100;
+
     stepper.enable(true);
-    bool reachedEndstop = moveUntilEndstopState(true, Z_UP, maxSteps);
+    for (int step = 0; step < fixedUpSteps; ++step) {
+        stepper.stepOnce(Z_UP, stepSleepUs);
+    }
+
+    bool reachedEndstop = moveUntilEndstopState(true, Z_UP, switchSeekSteps);
     stepper.enable(false);
 
     if (reachedEndstop) {
@@ -49,12 +56,12 @@ bool Head::penUp(int maxSteps) {
     return !reachedEndstop;
 }
 
-bool Head::penDown(int steps) {
+bool Head::penDown() {
     if (penDownState) {
         return true;
     }
 
-    stepper.move(-steps, stepSleepUs);
+    stepper.move(-move_steps_up, stepSleepUs);
     penDownState = true;
     return false;
 }
@@ -65,4 +72,13 @@ bool Head::isPenDown() const {
 
 void Head::setSpeed(int sleepUs) {
     stepSleepUs = sleepUs;
+}
+
+bool Head::setMoveStepsUp(int steps) {
+    if (steps <= 0) {
+        return true;
+    }
+
+    move_steps_up = steps;
+    return false;
 }

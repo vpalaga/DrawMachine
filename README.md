@@ -175,6 +175,7 @@ MOV 88.93 142.52
 | `WAT s` | 1 | Wait *s* seconds | Pico |
 | `CLB` | 0 | Calibrate X and Y against the end switches, then calibrate Z. The host then moves to the paper-origin offset and zeroes its position | Host and Pico |
 | `HCB` | 0 | Calibrate Z (pen head) only | Pico |
+| `SZS steps` | 1 | Set the pen up/down stroke length in steps (1-50000) | Pico |
 | `HOM` | 0 | `HCB`, then move to the home position `(0, 200)` mm | **Host only** |
 | `SCM m` | 1 | Set console mode (0, 1 or 2) | Pico (used internally by the sender) |
 
@@ -228,6 +229,7 @@ The Pico enumerates as a USB CDC serial device. The sender finds it by USB vendo
 - **Timing:** each step is a pulse with a 75 us half-cycle on X/Y (about 150 us per step, so roughly 8 mm/s on the leading axis at 800 steps/mm) and 100 us on Z. Tunable in the `Settings` struct in `motorDriver.cpp`.
 - **Motors are released between moves** to keep them cool. This also means the pen holder can sag slightly between moves.
 - **Calibration** drives X and Y towards their switches, then raises Z until its switch triggers. Every calibration loop has a step limit (400000 for XY, 50000 for Z) so a missing or miswired switch can't make it run forever. The pen is then known to be up.
+- **Pen stroke length:** `SZS steps` sets the Z-axis down stroke and the reference length used for the fixed pen-up move and endstop seek.
 
 ![Bresenham-style move function: black staircase = steps taken, red line = ideal path](images/Bresenham-style%20move%20function.png)
 

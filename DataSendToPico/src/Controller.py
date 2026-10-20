@@ -39,5 +39,7 @@ class Controller:
                 case "SMS":
                     self.motor_driver.setMotorSpeed(int(float(current_instruction[1])),
                                                     int(float(current_instruction[2])))
+                case "SZS":
+                    self.motor_driver.setPenSteps(int(float(current_instruction[1])))
                 case "HOM":
                     self.motor_driver.home()
