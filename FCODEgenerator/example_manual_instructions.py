@@ -41,7 +41,7 @@ start = Vec2(bounds_x // 2, bounds_y // 2)
 
 gen.travel_to(*start)
 
-for n in range(5000):
+for n in range(20):
     start = rnd_vec_in_bounds(start)
     gen.draw_to(*start)
 

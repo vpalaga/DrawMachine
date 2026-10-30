@@ -46,7 +46,7 @@ class Transmitter:
         self.console_mode = console
 
         # open the serial connection
-        print(f"OK: connecting to Pico on {Transmitter.SERIAL_PORT}...")
+        print(f"OK: connecting to Pico on {self.SERIAL_PORT}...")
         self.ser = serial.Serial(self.SERIAL_PORT, self.BAUDRATE, timeout=1)
 
         time.sleep(1)    # short delay to let the port settle

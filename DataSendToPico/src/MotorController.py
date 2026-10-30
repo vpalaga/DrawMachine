@@ -1,7 +1,29 @@
+import math
+
 from src.MotorOverclass import StepperMotor
 from src.CDC_send import Transmitter
 from src.tools import RequestReport, RequestFailCheck
 
+MOTOR_SPEEDS = {
+    # key: travel in mm, val: us_sleep time
+    1: 250,
+    5: 200,
+    10: 100,
+    50: 90,
+    100: 85,
+    500: 80,
+    1000: 80
+}
+
+def motor_speed(x:float, y:float)->tuple[int,int]:
+    distance: float = math.hypot(x, y)
+    print(distance)
+    speeds = list(MOTOR_SPEEDS.keys())
+    i:int = 0
+    while distance > speeds[i]:
+        print(speeds[i])
+        i += 1
+    return MOTOR_SPEEDS.get(speeds[i], 100), 75
 
 class MotorOutOfRangeError(Exception):#
     def __init__(self, motor:StepperMotor, difference:float|int):
@@ -16,7 +38,7 @@ class MotorController:
         "A4": (33, 48) # measure
     }
 
-    home_position:tuple[int,int] = (0, 200) # mm from 0,0
+    home_position:tuple[int,int] = (0, 300) # mm from 0,0
     motor_speeds:tuple[int,int] = (75, 100) # ms xy, z
 
     def __init__(self, move_format="A4"):
@@ -25,8 +47,8 @@ class MotorController:
         self.transmitter = Transmitter(console=False)
 
         #stepper motor objects to store the bullshit motor data
-        self.x_motor = StepperMotor(name="x_motor", max_pos_mm=297, tmc_mirco_spt=8) # measure
-        self.y_motor = StepperMotor(name="y_motor", max_pos_mm=210, tmc_mirco_spt=8) # measure
+        self.x_motor = StepperMotor(name="x_motor", max_pos_mm=380, tmc_mirco_spt=8) # measure
+        self.y_motor = StepperMotor(name="y_motor", max_pos_mm=315, tmc_mirco_spt=8) # measure
 
         # deal with starting offset (x, y)
         if move_format in MotorController.starting_offsets_user_presets.keys():# and type(move_format) == str:
@@ -48,6 +70,9 @@ class MotorController:
         
         x_move = x_target - self.x_motor.pos_mm
         y_move = y_target - self.y_motor.pos_mm
+
+        # set motor speeds
+        self.setMotorSpeed(*motor_speed(x_move, y_move))
 
         self.mm_move(x=x_move,y=y_move)
 
@@ -88,6 +113,7 @@ class MotorController:
     @RequestReport
     def home(self)->None:
         self.headCalibrate()
+        self.calibrate()
         self.move_to_mm(*self.home_position)
 
 

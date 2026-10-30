@@ -274,6 +274,7 @@ class FGenerator:
                 self._calibrations += 1
                 self.calibrate()
 
+        self.home()
 
 
     def save(

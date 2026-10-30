@@ -1,8 +1,10 @@
 #include "StepperDriver.h"
 #include "pico/stdlib.h"
 #include <stdio.h>
-#include <cmath>
+#include <algorithm>
+#include <cstdint>
 #include <cstdlib>
+#include <limits>
 
 StepperDriver::StepperDriver(Stepper::stepper_pins pins_x, Stepper::stepper_pins pins_y,
                              int xEndstopPin, int yEndstopPin)
@@ -66,40 +68,69 @@ bool StepperDriver::calibrate() {
 }
 
 void StepperDriver::bresenham(Stepper& leadStepper, Stepper& followStepper, int lead, int follow, bool leadDir, bool followDir){
-    // how many steps of follow pro one step of lead
-    float bresenhamStep = (float)follow / lead; // needs to be <= 1
+    const uint64_t pulseWidthUs = static_cast<uint64_t>(motor_sleep_us);
+    const uint64_t leadPeriodUs = pulseWidthUs * 2;
+    // Both axes span the same move duration; follow pulses are evenly timed within it.
+    const uint64_t moveDurationUs = static_cast<uint64_t>(lead) * leadPeriodUs;
+    const absolute_time_t startTime = get_absolute_time();
 
-    int followPos   = 0;
-    int followCycle;
-    int diffFollowCycle;
-    
-    for (int cycle = 1; cycle<lead+1; cycle++){ // cycle need to start at 1
-        
-        // calculate how many steps at current cycle position 
-        followCycle = (int)std::round(cycle*bresenhamStep);
-        
-        // check how many are needed for this cycle
-        diffFollowCycle = followCycle - followPos;
+    int leadSteps = 0;
+    int followSteps = 0;
+    bool leadPulseHigh = false;
+    bool followPulseHigh = false;
+    uint64_t leadFallUs = 0;
+    uint64_t followFallUs = 0;
 
-        // update the followPos to current follow position
-        followPos += diffFollowCycle;
-        
-        //move the steppers accordingly
-        if (diffFollowCycle != 0){
-            leadStepper.step_firstHalf(leadDir);
-            followStepper.step_firstHalf(followDir); // move the follow if needed
-            sleep_us(motor_sleep_us);
+    while (leadSteps < lead || followSteps < follow || leadPulseHigh || followPulseHigh) {
+        uint64_t nextEventUs = std::numeric_limits<uint64_t>::max();
+
+        if (leadSteps < lead) {
+            nextEventUs = std::min(nextEventUs, static_cast<uint64_t>(leadSteps) * leadPeriodUs);
+        }
+        if (followSteps < follow) {
+            const uint64_t followRiseUs =
+                    static_cast<uint64_t>(followSteps) * moveDurationUs / static_cast<uint64_t>(follow);
+            nextEventUs = std::min(nextEventUs, followRiseUs);
+        }
+        if (leadPulseHigh) {
+            nextEventUs = std::min(nextEventUs, leadFallUs);
+        }
+        if (followPulseHigh) {
+            nextEventUs = std::min(nextEventUs, followFallUs);
+        }
+
+        busy_wait_until(delayed_by_us(startTime, nextEventUs));
+
+        if (leadPulseHigh && leadFallUs == nextEventUs) {
             leadStepper.step_secondHalf();
+            leadPulseHigh = false;
+        }
+        if (followPulseHigh && followFallUs == nextEventUs) {
             followStepper.step_secondHalf();
-            sleep_us(motor_sleep_us);
+            followPulseHigh = false;
+        }
 
-        } else {
+        if (leadSteps < lead
+                && static_cast<uint64_t>(leadSteps) * leadPeriodUs == nextEventUs) {
             leadStepper.step_firstHalf(leadDir);
-            sleep_us(motor_sleep_us);
-            leadStepper.step_secondHalf();
-            sleep_us(motor_sleep_us);
+            ++leadSteps;
+            leadPulseHigh = true;
+            leadFallUs = nextEventUs + pulseWidthUs;
+        }
+        if (followSteps < follow
+                && static_cast<uint64_t>(followSteps) * moveDurationUs
+                   / static_cast<uint64_t>(follow) == nextEventUs) {
+            followStepper.step_firstHalf(followDir);
+            ++followSteps;
+            followPulseHigh = true;
+            const uint64_t nextFollowRiseUs = followSteps < follow
+                    ? static_cast<uint64_t>(followSteps) * moveDurationUs / static_cast<uint64_t>(follow)
+                    : moveDurationUs;
+            followFallUs = nextEventUs + (nextFollowRiseUs - nextEventUs) / 2;
         }
     }
+
+    busy_wait_until(delayed_by_us(startTime, moveDurationUs));
 }
 
 void StepperDriver::enable(bool setState){

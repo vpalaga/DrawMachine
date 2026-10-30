@@ -30,7 +30,6 @@ class Controller:
                 case "CLB":
                     self.motor_driver.calibrate()
                 case "PUP":
-                    time.sleep(1)
                     self.motor_driver.penUp()
                 case "PDN": 
                     self.motor_driver.penDown()

@@ -8,22 +8,18 @@ Head::Head(Stepper::stepper_pins stepperPins, int endstopPin)
 
 bool Head::moveUntilEndstopState(bool targetState, bool direction, int maxSteps) {
     int steps = 0;
-    while (true) {
-        while (endstop.getSwichState() != targetState) {
-            if (steps >= maxSteps) {
-                return false;
-            }
 
-            stepper.stepOnce(direction, stepSleepUs);
-            ++steps;
+    while (endstop.getSwichState() != targetState) {
+        if (steps >= maxSteps) {
+            return false;
         }
 
-        sleep_ms(5);
-        if (endstop.getSwichState() == targetState) {
-            return true;
-        }
+        stepper.stepOnce(direction, stepSleepUs);
+        ++steps;
     }
+    return true;
 }
+
 
 bool Head::calibrate() {
     stepper.enable(true);
@@ -41,8 +37,6 @@ bool Head::calibrate() {
 bool Head::penUp() {
     const int fixedUpSteps = move_steps_up * fixed_up_percent / 100;
     const int switchSeekSteps = move_steps_up * (100 - fixed_up_percent + switch_seek_extra_percent) / 100;
-
-    sleep_ms(500);
 
     stepper.enable(true);
     for (int step = 0; step < fixedUpSteps; ++step) {

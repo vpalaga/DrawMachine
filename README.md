@@ -22,7 +22,7 @@ flowchart LR
 
 1. **`FCODEgenerator`** reads a DXF (or you script the pen by hand), centres it on the paper, reorders the strokes to minimise pen travel, and writes an `.FCODE` text file. Positions are in **millimetres**.
 2. **`DataSendToPico`** reads the FCODE file line by line, converts millimetres to motor steps, range-checks every move and sends one command at a time to the Pico over USB CDC (virtual serial port). It waits for the Pico to confirm each command.
-3. **`StepperDriver-pico`** is the firmware. It parses each command, runs a Bresenham-style line algorithm so X and Y arrive together, lifts and lowers the pen, and homes against the end switches.
+3. **`StepperDriver-pico`** is the firmware. It parses each command, coordinates X and Y step pulses so both axes finish a move together, lifts and lowers the pen, and homes against the end switches.
 
 ---
 
@@ -48,8 +48,8 @@ flowchart LR
 - **Controller:** Raspberry Pi Pico (USB CDC serial to the PC).
 - **Drivers:** three **TMC2209** stepper drivers, one each for X, Y and Z. Microstepping is set on the board with switches, and the host software assumes **8x**.
 - **Motion:** 200 steps/rev steppers on 2 mm pitch rods, so the host uses **800 steps per mm** (200 x 8 microsteps / 2 mm).
-- **Pen lift:** the Z stepper raises and lowers the pen (6500 steps between up and down, still marked "needs to be tested" in the code).
-- **Limit switches:** one each for X, Y and Z. They are used only for calibration.
+- **Pen lift:** the Z stepper raises and lowers the pen. The default stroke is 6500 steps and can be changed with `SZS`.
+- **Limit switches:** one each for X, Y and Z, used for calibration. Each limit-switch input has an external 4.7 kΩ pull-up resistor.
 - **Work area:** A4 landscape, 297 x 210 mm (A5 and A3 are also defined in the generator).
 - **Indicators:** an "instruction" LED (lit while commands are arriving) and a "console mode" LED.
 - **Board extras (v2.0):** 6 A fuse and bulk capacitor on the motor supply, status LEDs and a debug header.
@@ -68,7 +68,7 @@ A full ASCII drawing of the Pico with every pin is in [`StepperDriver-pico/Pico_
 | Extra buttons B1 / B2 | 18 / 17 |
 | LED instruction / console mode | 15 / 14 |
 
-All switches are wired between the GPIO and GND and use the Pico's internal pull-up, so a closed switch reads as "pressed". Motor enable pins are active low.
+The limit switches connect their GPIO inputs to GND when pressed. The firmware also enables the Pico's internal pull-ups; the external 4.7 kΩ pull-ups were added to stabilize the switch signals. Motor enable pins are active low.
 
 ---
 
@@ -91,7 +91,7 @@ Hold **BOOTSEL**, plug the Pico in, and copy `motorDriver.uf2` onto the drive th
 
 ### 2. Install the Python dependencies
 
-Python **3.10+** is required (the code uses `match` and `X | Y` type hints).
+Python **3.10+** is required (the code uses `match` and `X | Y` type hints). Run this command from the repository root:
 
 ```bash
 pip install -r requirements.txt
@@ -131,7 +131,7 @@ cd DataSendToPico
 python use_example.py
 ```
 
-Creating the controller **homes the machine straight away**: it sends `CLB`, then moves the head to the paper origin. Make sure the carriage has room to move before you run it.
+Creating the controller initializes the pen head, homes X and Y with `CLB`, then moves the carriage to the configured paper-origin offset. Make sure the carriage has room to move before you run it.
 
 ---
 
@@ -173,14 +173,14 @@ MOV 88.93 142.52
 | `CLB` | 0 | Calibrate X and Y against their end switches. The host then moves to the paper-origin offset and zeroes its position | Host and Pico |
 | `HCB` | 0 | Calibrate Z (pen head) only | Pico |
 | `SZS steps` | 1 | Set the pen up/down stroke length in steps (1-50000) | Pico |
-| `HOM` | 0 | `HCB`, then move to the home position `(0, 200)` mm | **Host only** |
+| `HOM` | 0 | `HCB`, then move to the home position `(0, 300)` mm | **Host only** |
 | `SCM m` | 1 | Set console mode (0, 1 or 2) | Pico (used internally by the sender) |
 
-`PUP` and `PDN` return an error from the Pico if the pen is already in that state. The generator never emits redundant ones.
+`PDN` returns an error if the firmware already considers the pen down. `PUP` runs the lift and endstop-seek sequence. The generator avoids emitting redundant pen-state instructions.
 
 ### Automatic recalibration
 
-To fight lost steps on long jobs, the generator inserts `HCB` every 500 instructions and `CLB` every 2000 (`head_calibration_after_instruction` and `overall_calibration_after_instruction`).
+To fight lost steps on long jobs, the generator inserts `HCB` every 200 instructions and `CLB` every 1000 (`head_calibration_after_instruction` and `overall_calibration_after_instruction`).
 
 ### Writing FCODE by hand
 
@@ -222,10 +222,10 @@ The Pico enumerates as a USB CDC serial device. The sender finds it by USB vendo
 
 ### Firmware behaviour
 
-- **Line algorithm:** the axis with more steps is the "lead". For each lead step, the follow axis steps whenever its rounded ideal position has advanced. This keeps the head close to the true straight line (see the picture below).
-- **Timing:** each step is a pulse with a 75 us half-cycle on X/Y (about 150 us per step, so roughly 8 mm/s on the leading axis at 800 steps/mm) and 100 us on Z. Tunable in the `Settings` struct in `motorDriver.cpp`.
-- **Motors are released between moves** to keep them cool. This also means the pen holder can sag slightly between moves.
-- **Calibration:** `CLB` drives X and Y towards their switches; `HCB` raises Z until its switch triggers. Every calibration loop has a step limit (400000 for XY, 50000 for Z) so a missing or miswired switch can't make it run forever.
+- **XY motion:** the axis with more steps determines the move duration; follow-axis pulses are distributed across that duration so both axes finish together.
+- **Timing:** X/Y and Z pulse timing is configurable with `SMS`. The firmware defaults to 50 us half-cycles for X/Y and 100 us for Z; the host adjusts motor speed for each move.
+- **Motor enables:** X/Y remain enabled while instructions are being processed and are disabled after 3 seconds without a new instruction. The Z motor is disabled after each pen movement.
+- **Calibration:** `CLB` drives X and Y towards their switches; `HCB` moves Z away from its switch, then raises it back until the switch triggers. Every calibration loop has a step limit (400000 for XY, 50000 for Z) so a missing or miswired switch can't make it run forever.
 - **Pen stroke length:** `SZS steps` sets the Z-axis down stroke and the reference length used for the fixed pen-up move and endstop seek.
 
 ![Bresenham-style move function: black staircase = steps taken, red line = ideal path](images/Bresenham-style%20move%20function.png)
@@ -237,7 +237,7 @@ The Pico enumerates as a USB CDC serial device. The sender finds it by USB vendo
 | File | Purpose |
 | --- | --- |
 | `Controller.py` | Reads an FCODE file and runs it instruction by instruction, printing progress |
-| `MotorController.py` | mm to steps conversion, range checks (297 x 210 mm), paper-origin offset (A4 preset: 33 mm, 48 mm from the switches, so measure your own), request logging |
+| `MotorController.py` | mm to steps conversion, host travel range checks (380 x 315 mm), paper-origin offset (A4 preset: 33 mm, 48 mm from the switches, so measure your own), request logging |
 | `MotorOverclass.py` | Per-axis constants and position bookkeeping (steps per mm, max travel) |
 | `CDC_send.py` | `Transmitter`: finds the Pico, sends commands and reads the two status replies, with a 200 s response timeout |
 | `CDC_test.py` | Tiny CLI: type raw instructions such as `MOV 100 100` and see both replies |
@@ -249,7 +249,7 @@ The Pico enumerates as a USB CDC serial device. The sender finds it by USB vendo
 
 ## PCB
 
-The controller board is **v2.0**, designed in KiCad (about 98 x 67 mm). It carries the Pico, three TMC2209 drivers (U1 to U3, one per axis), per-driver microstepping switches, end-switch inputs, a fused motor supply (6 A fuse and a 330 uF bulk capacitor), status LEDs and a debug header. This is the board the firmware pin map targets.
+The controller board is **v2.0**, designed in KiCad (about 98 x 67 mm). It carries the Pico, three TMC2209 drivers (U1 to U3, one per axis), per-driver microstepping switches, end-switch inputs with 4.7 kΩ pull-ups, a fused motor supply (6 A fuse and a 330 uF bulk capacitor), status LEDs and a debug header. This is the board the firmware pin map targets.
 
 ![DrawMachine v2.0 PCB layout](images/pcb_v2.png)
 
@@ -263,4 +263,3 @@ The v1 prototype in `pcb/test/` is no longer used and is kept only for reference
 ## Known issues and to-do
 
 - [ ] Standard G-code support, which would be easier than maintaining FCODE.
-- [ ] Pen-up calibration is not reliable and needs investigation.

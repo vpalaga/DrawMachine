@@ -43,18 +43,11 @@ const map<string, size_t> INSTRUCTION_SIZES = {
 };
 //=============================================================
 
-// manual control swiches
-SwitchButton mSwich_XP(22);
-SwitchButton mSwich_XM(21);
-SwitchButton mSwich_YP(20);
-SwitchButton mSwich_YM(19);
-SwitchButton mSwich_B1(18);
-SwitchButton mSwich_B2(17);
-
 // end switches, used by the axis drivers during calibration
 const int x_endstop_pin = 11;
-const int y_endstop_pin = 2;
-const int z_endstop_pin = 7;
+const int y_endstop_pin = 7;
+const int z_endstop_pin = 2;
+
 
 // leds
 Led instructionLed(15);
@@ -214,62 +207,6 @@ void process_received(const string& buf, int len) {
     confirm_recive(failed);
 }
 
-void manual_instruction(){
-    int8_t x_move = 0;
-    int8_t y_move = 0;
-
-    if(mSwich_XP.getSwichState()){
-        x_move++;
-        if(consoleEnabled == 1){
-            printf("B1 (xp): pressed\n");
-        }    
-    }
-
-    if(mSwich_XM.getSwichState()){
-        x_move--;
-        if(consoleEnabled == 1){
-            printf("B2 (xm): pressed\n");
-            printf("x: %d\n", stepper_driver.xEndstopState());
-            printf("y: %d\n", stepper_driver.yEndstopState());
-            sleep_ms(20);
-        }    
-    }
-
-    if(mSwich_YP.getSwichState()){
-        y_move++;
-        if(consoleEnabled == 1){
-            printf("B3 (yp): pressed\n");
-        }    
-    }
-
-    if(mSwich_YM.getSwichState()){
-        y_move--;
-        if(consoleEnabled == 1){
-            printf("B4 (ym): pressed\n");
-        }    
-    }
-
-    if(mSwich_B1.getSwichState()){ // print head position
-        if (consoleEnabled == 1){
-            stepper_driver.printPosToTermial();
-            printf("B5: pressed\n");
-            sleep_ms(700);
-        }
-    }
-
-    if(mSwich_B2.getSwichState()){
-        if(consoleEnabled == 1){
-            printf("B6: pressed\n");
-        }    
-    }
-
-    // move the motors if needed
-    if (x_move != 0 || y_move != 0){
-        stepper_driver.move(x_move, y_move);
-    }
-
-    return;
-}
 
 // main functions:
 
@@ -329,11 +266,9 @@ int main()
         ledConsoleMode.setState(head.endstop.getSwichState());
         
         if (absolute_time_diff_us(last_instruction_time, get_absolute_time()) > timeout_us){
-            // enable manual control
             instructionLed.setState(false);
             stepper_driver.enable(false);
 
-            manual_instruction();
         } else {
             // an instruction was received recently
             instructionLed.setState(true);
