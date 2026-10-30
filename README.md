@@ -64,7 +64,6 @@ A full ASCII drawing of the Pico with every pin is in [`StepperDriver-pico/Pico_
 | Y stepper: STEP / DIR / EN | 8 / 6 / 9 |
 | Z stepper: STEP / DIR / EN | 4 / 3 / 5 |
 | End switch X / Y / Z | 11 / 7 / 2 |
-| Manual jog X+ / X- / Y+ / Y- | 22 / 21 / 20 / 19 |
 | Extra buttons B1 / B2 | 18 / 17 |
 | LED instruction / console mode | 15 / 14 |
 
@@ -128,10 +127,10 @@ Plug the Pico in **before** starting Python, then:
 
 ```bash
 cd DataSendToPico
-python use_example.py
+python -c "from src.Controller import Controller; Controller('../FCODEgenerator/.fcodes/simpleShape.FCODE').do_file()"
 ```
 
-Creating the controller initializes the pen head, homes X and Y with `CLB`, then moves the carriage to the configured paper-origin offset. Make sure the carriage has room to move before you run it.
+This runs the `.FCODE` file generated above. The controller initializes the pen head, homes X and Y with `CLB`, then moves the carriage to the configured paper-origin offset. Make sure the carriage has room to move before you run it.
 
 ---
 
@@ -184,7 +183,7 @@ To fight lost steps on long jobs, the generator inserts `HCB` every 200 instruct
 
 ### Writing FCODE by hand
 
-`FGenerator` also works without a DXF. Pass a name instead of a `.dxf` path and drive the pen yourself:
+`FGenerator` also works without a DXF. Run this from `FCODEgenerator/`, pass a name instead of a `.dxf` path, and drive the pen yourself:
 
 ```python
 from main import FGenerator
@@ -228,7 +227,7 @@ The Pico enumerates as a USB CDC serial device. The sender finds it by USB vendo
 - **Calibration:** `CLB` drives X and Y towards their switches; `HCB` moves Z away from its switch, then raises it back until the switch triggers. Every calibration loop has a step limit (400000 for XY, 50000 for Z) so a missing or miswired switch can't make it run forever.
 - **Pen stroke length:** `SZS steps` sets the Z-axis down stroke and the reference length used for the fixed pen-up move and endstop seek.
 
-![Bresenham-style move function: black staircase = steps taken, red line = ideal path](images/Bresenham-style%20move%20function.png)
+![Example of coordinated X/Y step pulses](images/bresenham_example.png)
 
 ---
 
